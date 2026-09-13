@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — Pack 152 Platform</title>
+
+  <!-- Supabase JS Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS
+       ========================================================================== */
+    :root {
+      --color-primary: #16a34a;         /* Scout Green */
+      --color-primary-hover: #15803d;
+      --color-secondary: #2563eb;       /* Cub Scout Blue */
+      --color-danger: #ef4444;          /* Red for error */
+      --color-success: #22c55e;         /* Green for valid */
+
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+
+      --radius-md: 0.625rem;
+      --radius-lg: 1rem;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background: 
+        linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)),
+        url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') 
+        center/cover no-repeat fixed;
+    }
+
+    /* Container positioned ~15-20% down from the top */
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15vh 1.5rem 3rem 1.5rem;
+    }
+
+    /* Card Styling */
+    .auth-card {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 460px;
+      padding: 2.25rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .card-header h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .card-header p {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      margin-top: 0.35rem;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      display: none;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      line-height: 1.4;
+    }
+
+    .alert-banner.error {
+      display: block;
+      background-color: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--color-danger);
+      color: #fca5a5;
+    }
+
+    .alert-banner.info {
+      display: block;
+      background-color: rgba(37, 99, 235, 0.2);
+      border: 1px solid var(--color-secondary);
+      color: #93c5fd;
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      font-family: var(--font-sans);
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      color: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+    }
+
+    .form-control.otp-input {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      letter-spacing: 0.35em;
+      text-align: center;
+    }
+
+    /* Password Rules List */
+    .password-rules {
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.8rem;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #94a3b8;
+      margin-bottom: 0.25rem;
+      transition: color 0.2s ease;
+    }
+
+    .rule-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .rule-item.valid {
+      color: var(--color-success);
+    }
+
+    .rule-icon {
+      font-size: 0.85rem;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: var(--color-primary);
+      color: #ffffff;
+    }
+
+    .btn:hover:not(:disabled) {
+      background-color: var(--color-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+
+    .footer-link a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Hidden Steps */
+    .step-pane {
+      display: none;
+    }
+
+    .step-pane.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="page-wrapper">
+    <div class="auth-card">
+
+      <!-- ALERT MESSAGE BANNER -->
+      <div id="alert-banner" class="alert-banner"></div>
+
+      <!-- ==========================================================================
+         STEP 1: REGISTRATION FORM
+         ========================================================================== -->
+      <div id="step-signup" class="step-pane active">
+        <div class="card-header">
+          <h1>Create Account</h1>
+          <p>Join the Pack 152 Platform</p>
+        </div>
+
+        <form id="signup-form" onsubmit="handleSignUp(event)">
+          <!-- Email Input -->
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input 
+              type="email" 
+              id="email" 
+              class="form-control" 
+              placeholder="parent@example.com" 
+              required 
+            />
+          </div>
+
+          <!-- Password Input -->
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input 
+              type="password" 
+              id="password" 
+              class="form-control" 
+              placeholder="••••••••••••" 
+              oninput="validatePassword()"
+              required 
+            />
+          </div>
+
+          <!-- Real-Time Password Requirements Checklist -->
+          <div class="password-rules">
+            <div id="rule-len" class="rule-item">
+              <span class="rule-icon">✖</span> At least 12 characters
+            </div>
+            <div id="rule-upper" class="rule-item">
+              <span class="rule-icon">✖</span> Uppercase letter (A-Z)
+            </div>
+            <div id="rule-lower" class="rule-item">
+              <span class="rule-icon">✖</span> Lowercase letter (a-z)
+            </div>
+            <div id="rule-num" class="rule-item">
+              <span class="rule-icon">✖</span> Number (0-9)
+            </div>
+            <div id="rule-spec" class="rule-item">
+              <span class="rule-icon">✖</span> Special character (!@#$%^&*...)
+            </div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn" disabled>Send Verification Code</button>
+        </form>
+
+        <div class="footer-link">
+          Already have an account? <a href="/login">Log In</a>
+        </div>
+      </div>
+
+
+      <!-- ==========================================================================
+         STEP 2: EMAIL OTP VERIFICATION FORM
+         ========================================================================== -->
+      <div id="step-otp" class="step-pane">
+        <div class="card-header">
+          <h1>Verify Email</h1>
+          <p>Enter the OTP code sent to your email</p>
+        </div>
+
+        <form id="otp-form" onsubmit="handleVerifyOTP(event)">
+          <div class="form-group">
+            <label class="form-label" for="otp-code">Enter Code</label>
+            <input 
+              type="text" 
+              id="otp-code" 
+              class="form-control otp-input" 
+              placeholder="12345678" 
+              maxlength="8"
+              autocomplete="one-time-code"
+              required 
+            />
+          </div>
+
+          <button type="submit" id="verify-btn" class="btn">Verify & Complete Sign Up</button>
+        </form>
+
+        <div class="footer-link">
+          Didn't receive a code? <a href="#" onclick="resendOTP(event)">Resend Code</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+     SUPABASE AUTH INTEGRATION SCRIPT
+     ========================================================================== -->
+  <script>
+    /* -------------------------------------------------------------------------
+       1. INITIALIZE SUPABASE CLIENT
+       Replace the placeholders below with your Supabase Project URL & Anon Key.
+       ------------------------------------------------------------------------- */
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    
+    // Initialize client safely
+    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    /* Global email state */
+    let userEmail = '';
+
+    /* -------------------------------------------------------------------------
+       2. STRICT PASSWORD VALIDATION LOGIC
+       ------------------------------------------------------------------------- */
+    function validatePassword() {
+      const password = document.getElementById('password').value;
+
+      const checks = {
+        len: password.length >= 12,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        num: /[0-9]/.test(password),
+        spec: /[^a-zA-Z0-9]/.test(password)
+      };
+
+      // Update Checklist UI
+      updateRuleUI('rule-len', checks.len);
+      updateRuleUI('rule-upper', checks.upper);
+      updateRuleUI('rule-lower', checks.lower);
+      updateRuleUI('rule-num', checks.num);
+      updateRuleUI('rule-spec', checks.spec);
+
+      // Enable submit button only if ALL rules are met
+      const isValid = Object.values(checks).every(Boolean);
+      document.getElementById('submit-btn').disabled = !isValid;
+
+      return isValid;
+    }
+
+    function updateRuleUI(elementId, isValid) {
+      const el = document.getElementById(elementId);
+      const icon = el.querySelector('.rule-icon');
+      if (isValid) {
+        el.classList.add('valid');
+        icon.textContent = '✔';
+      } else {
+        el.classList.remove('valid');
+        icon.textContent = '✖';
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       3. STEP 1: SIGN UP WITH SUPABASE
+       ------------------------------------------------------------------------- */
+    async function handleSignUp(event) {
+      event.preventDefault();
+      clearAlert();
+
+      if (!validatePassword()) {
+        showAlert('Password does not meet all security requirements.', 'error');
+        return;
+      }
+
+      userEmail = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const submitBtn = document.getElementById('submit-btn');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending Code...';
+
+      try {
+        if (!supabase) {
+          throw new Error('Supabase client is not configured. Please add your credentials.');
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email: userEmail,
+          password: password,
+        });
+
+        if (error) throw error;
+
+        // Transition to OTP Step
+        document.getElementById('step-signup').classList.remove('active');
+        document.getElementById('step-otp').classList.add('active');
+        showAlert(`Verification code sent to ${userEmail}. Please check your inbox.`, 'info');
+
+      } catch (err) {
+        showAlert(err.message || 'An error occurred during registration.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Verification Code';
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       4. STEP 2: VERIFY OTP CODE & REDIRECT TO /onBoarding/
+       ------------------------------------------------------------------------- */
+    async function handleVerifyOTP(event) {
+      event.preventDefault();
+      clearAlert();
+
+      const otpCode = document.getElementById('otp-code').value.trim();
+      const verifyBtn = document.getElementById('verify-btn');
+
+      if (!otpCode) {
+        showAlert('Please enter the verification code.', 'error');
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+
+      try {
+        if (!supabase) {
+          throw new Error('Supabase client is not configured.');
+        }
+
+        // Verify email code with Supabase Auth
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: userEmail,
+          token: otpCode,
+          type: 'signup' // or 'email' depending on Supabase auth setup
+        });
+
+        if (error) throw error;
+
+        // On successful OTP verification -> Redirect to /onBoarding/
+        showAlert('Verification successful! Redirecting...', 'info');
+        setTimeout(() => {
+          window.location.href = '/onBoarding/';
+        }, 1000);
+
+      } catch (err) {
+        showAlert(err.message || 'Invalid or expired OTP code. Please try again.', 'error');
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & Complete Sign Up';
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       5. RESEND OTP CODE
+       ------------------------------------------------------------------------- */
+    async function resendOTP(event) {
+      event.preventDefault();
+      clearAlert();
+
+      try {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: userEmail,
+        });
+
+        if (error) throw error;
+        showAlert('A new verification code has been sent to your email.', 'info');
+      } catch (err) {
+        showAlert(err.message || 'Failed to resend verification code.', 'error');
+      }
+    }
+
+    /* Helper Alerts */
+    function showAlert(msg, type) {
+      const alert = document.getElementById('alert-banner');
+      alert.textContent = msg;
+      alert.className = `alert-banner ${type}`;
+    }
+
+    function clearAlert() {
+      const alert = document.getElementById('alert-banner');
+      alert.className = 'alert-banner';
+      alert.textContent = '';
+    }
+  </script>
+
+</body>
+</html>
