@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up — Pack 152 Platform</title>
 
-  <!-- Supabase JS Client Library (Removed defer so it loads before page scripts) -->
+  <!-- Supabase JS Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- hCaptcha API Script -->
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
   <style>
     :root {
@@ -35,7 +38,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 15vh 1.5rem 3rem 1.5rem;
+      padding: 10vh 1.5rem 3rem 1.5rem;
     }
 
     .auth-card {
@@ -49,7 +52,7 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
 
-    .card-header { text-align: center; margin-bottom: 1.75rem; }
+    .card-header { text-align: center; margin-bottom: 1.5rem; }
     .card-header h1 { font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; }
     .card-header p { font-size: 0.95rem; color: #94a3b8; margin-top: 0.35rem; }
 
@@ -102,9 +105,15 @@
     .rule-item:last-child { margin-bottom: 0; }
     .rule-icon { font-weight: bold; width: 16px; display: inline-block; text-align: center; color: var(--color-danger); }
     
-    /* ACTIVE MATCHED RULE */
     .rule-item.valid { color: #4ade80 !important; font-weight: 600; }
     .rule-item.valid .rule-icon { color: #22c55e !important; }
+
+    /* hCaptcha Wrapper */
+    .hcaptcha-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
 
     .btn {
       width: 100%;
@@ -163,12 +172,24 @@
             />
           </div>
 
+          <!-- Password Rules Checklist -->
           <div class="password-rules">
             <div id="rule-len" class="rule-item"><span class="rule-icon">✖</span> At least 12 characters</div>
             <div id="rule-upper" class="rule-item"><span class="rule-icon">✖</span> Uppercase letter (A-Z)</div>
             <div id="rule-lower" class="rule-item"><span class="rule-icon">✖</span> Lowercase letter (a-z)</div>
             <div id="rule-num" class="rule-item"><span class="rule-icon">✖</span> Number (0-9)</div>
             <div id="rule-spec" class="rule-item"><span class="rule-icon">✖</span> Special character (!@#$%^&*...)</div>
+          </div>
+
+          <!-- hCaptcha Container -->
+          <!-- Replace data-sitekey with your actual hCaptcha Site Key -->
+          <div class="hcaptcha-wrapper">
+            <div 
+              class="h-captcha" 
+              data-sitekey="216a0332-7f88-49e2-8436-4eec2ed4fb84"
+              data-callback="onCaptchaSuccess"
+              data-expired-callback="onCaptchaExpired">
+            </div>
           </div>
 
           <button type="submit" id="submit-btn" class="btn" disabled>Send Verification Code</button>
@@ -203,7 +224,20 @@
   </main>
 
   <script>
-    // 1. Password live validation
+    let hcaptchaToken = null;
+
+    // hCaptcha Callbacks
+    window.onCaptchaSuccess = function(token) {
+      hcaptchaToken = token;
+      window.validatePassword(); // Re-evaluate button state
+    };
+
+    window.onCaptchaExpired = function() {
+      hcaptchaToken = null;
+      window.validatePassword();
+    };
+
+    // Password live validation
     window.validatePassword = function() {
       const passwordInput = document.getElementById('password');
       if (!passwordInput) return false;
@@ -235,15 +269,19 @@
         }
       }
 
+      // Check if Captcha is enabled in DOM and solved (optional check if captcha is turned off)
+      const hcaptchaElement = document.querySelector('.h-captcha');
+      const isCaptchaSolved = !hcaptchaElement || Boolean(hcaptchaToken);
+
       const submitBtn = document.getElementById('submit-btn');
       if (submitBtn) {
-        submitBtn.disabled = !allValid;
+        submitBtn.disabled = !(allValid && isCaptchaSolved);
       }
 
-      return allValid;
+      return allValid && isCaptchaSolved;
     };
 
-    // 2. Supabase Configuration & Dynamic Client Getter
+    // Supabase Setup
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
     
@@ -260,7 +298,6 @@
 
     let userEmail = '';
 
-    // 3. Attach Form Listeners
     function initApp() {
       window.validatePassword();
 
@@ -276,13 +313,12 @@
 
     initApp();
 
-    // 4. Auth Actions
     async function handleSignUp(event) {
       event.preventDefault();
       clearAlert();
 
       if (!window.validatePassword()) {
-        showAlert('Password does not meet all security requirements.', 'error');
+        showAlert('Please fulfill all password requirements and complete the Captcha.', 'error');
         return;
       }
 
@@ -297,9 +333,16 @@
         const client = getSupabase();
         if (!client) throw new Error('Supabase SDK failed to load. Please refresh the page and try again.');
 
+        // Pass captchaToken in options if available
+        const signUpOptions = {};
+        if (hcaptchaToken) {
+          signUpOptions.captchaToken = hcaptchaToken;
+        }
+
         const { data, error } = await client.auth.signUp({
           email: userEmail,
           password: password,
+          options: signUpOptions
         });
 
         if (error) throw error;
@@ -311,6 +354,8 @@
       } catch (err) {
         showAlert(err.message || 'An error occurred during registration.', 'error');
         submitBtn.disabled = false;
+        if (window.hcaptcha) window.hcaptcha.reset();
+        hcaptchaToken = null;
         submitBtn.textContent = 'Send Verification Code';
       }
     }
