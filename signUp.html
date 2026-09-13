@@ -5,41 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up — Pack 152 Platform</title>
 
-  <!-- Supabase JS Client Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS Client Library (Added defer so it doesn't block page load) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
   <style>
-    /* ==========================================================================
-       1. DESIGN TOKENS & STYLES
-       ========================================================================== */
     :root {
-      --color-primary: #16a34a;         /* Scout Green */
+      --color-primary: #16a34a;
       --color-primary-hover: #15803d;
-      --color-secondary: #2563eb;       /* Cub Scout Blue */
-      --color-danger: #ef4444;          /* Red for error */
-      --color-success: #22c55e;         /* Bright Green for valid */
-
+      --color-secondary: #2563eb;
+      --color-danger: #ef4444;
+      --color-success: #22c55e;
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
-
       --radius-md: 0.625rem;
       --radius-lg: 1rem;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body, html {
       min-height: 100vh;
       font-family: var(--font-sans);
       color: #ffffff;
-      background: 
-        linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)),
-        url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') 
-        center/cover no-repeat fixed;
+      background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat fixed;
     }
 
     .page-wrapper {
@@ -50,7 +38,6 @@
       padding: 15vh 1.5rem 3rem 1.5rem;
     }
 
-    /* Auth Card */
     .auth-card {
       background: rgba(30, 41, 59, 0.88);
       backdrop-filter: blur(12px);
@@ -62,24 +49,10 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
 
-    .card-header {
-      text-align: center;
-      margin-bottom: 1.75rem;
-    }
+    .card-header { text-align: center; margin-bottom: 1.75rem; }
+    .card-header h1 { font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; }
+    .card-header p { font-size: 0.95rem; color: #94a3b8; margin-top: 0.35rem; }
 
-    .card-header h1 {
-      font-size: 1.85rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .card-header p {
-      font-size: 0.95rem;
-      color: #94a3b8;
-      margin-top: 0.35rem;
-    }
-
-    /* Alerts */
     .alert-banner {
       display: none;
       padding: 0.75rem 1rem;
@@ -88,34 +61,11 @@
       margin-bottom: 1.25rem;
       line-height: 1.4;
     }
+    .alert-banner.error { display: block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); color: #fca5a5; }
+    .alert-banner.info { display: block; background-color: rgba(37, 99, 235, 0.2); border: 1px solid var(--color-secondary); color: #93c5fd; }
 
-    .alert-banner.error {
-      display: block;
-      background-color: rgba(239, 68, 68, 0.2);
-      border: 1px solid var(--color-danger);
-      color: #fca5a5;
-    }
-
-    .alert-banner.info {
-      display: block;
-      background-color: rgba(37, 99, 235, 0.2);
-      border: 1px solid var(--color-secondary);
-      color: #93c5fd;
-    }
-
-    /* Inputs */
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 0.4rem;
-    }
-
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem; }
     .form-control {
       width: 100%;
       padding: 0.75rem 1rem;
@@ -128,20 +78,10 @@
       outline: none;
       transition: all 0.2s ease;
     }
+    .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
+    .form-control.otp-input { font-family: var(--font-mono); font-size: 1.5rem; letter-spacing: 0.35em; text-align: center; }
 
-    .form-control:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
-    }
-
-    .form-control.otp-input {
-      font-family: var(--font-mono);
-      font-size: 1.5rem;
-      letter-spacing: 0.35em;
-      text-align: center;
-    }
-
-    /* Password Requirements Checklist Styling */
+    /* REAL-TIME CHECKLIST STYLES */
     .password-rules {
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -151,7 +91,6 @@
       margin-bottom: 1.25rem;
       font-size: 0.85rem;
     }
-
     .rule-item {
       display: flex;
       align-items: center;
@@ -160,30 +99,13 @@
       margin-bottom: 0.35rem;
       transition: all 0.2s ease;
     }
+    .rule-item:last-child { margin-bottom: 0; }
+    .rule-icon { font-weight: bold; width: 16px; display: inline-block; text-align: center; color: var(--color-danger); }
+    
+    /* ACTIVE MATCHED RULE */
+    .rule-item.valid { color: #4ade80 !important; font-weight: 600; }
+    .rule-item.valid .rule-icon { color: #22c55e !important; }
 
-    .rule-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .rule-icon {
-      font-weight: bold;
-      width: 16px;
-      display: inline-block;
-      text-align: center;
-      color: var(--color-danger);
-    }
-
-    /* MATCHED RULE STYLE (Live update target) */
-    .rule-item.valid {
-      color: #4ade80; /* Bright Green */
-      font-weight: 600;
-    }
-
-    .rule-item.valid .rule-icon {
-      color: var(--color-success);
-    }
-
-    /* Buttons */
     .btn {
       width: 100%;
       display: inline-flex;
@@ -199,37 +121,14 @@
       background-color: var(--color-primary);
       color: #ffffff;
     }
+    .btn:hover:not(:disabled) { background-color: var(--color-primary-hover); transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .btn:hover:not(:disabled) {
-      background-color: var(--color-primary-hover);
-      transform: translateY(-1px);
-    }
+    .footer-link { text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: #94a3b8; }
+    .footer-link a { color: #60a5fa; text-decoration: none; font-weight: 600; }
 
-    .btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .footer-link {
-      text-align: center;
-      margin-top: 1.5rem;
-      font-size: 0.875rem;
-      color: #94a3b8;
-    }
-
-    .footer-link a {
-      color: #60a5fa;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .step-pane {
-      display: none;
-    }
-
-    .step-pane.active {
-      display: block;
-    }
+    .step-pane { display: none; }
+    .step-pane.active { display: block; }
   </style>
 </head>
 <body>
@@ -237,7 +136,6 @@
   <main class="page-wrapper">
     <div class="auth-card">
 
-      <!-- ALERT BANNER -->
       <div id="alert-banner" class="alert-banner"></div>
 
       <!-- STEP 1: SIGN UP FORM -->
@@ -250,43 +148,28 @@
         <form id="signup-form">
           <div class="form-group">
             <label class="form-label" for="email">Email Address</label>
-            <input 
-              type="email" 
-              id="email" 
-              class="form-control" 
-              placeholder="parent@example.com" 
-              required 
-            />
+            <input type="email" id="email" class="form-control" placeholder="parent@example.com" required />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="password">Password</label>
+            <!-- Added inline oninput directly back to the element -->
             <input 
               type="password" 
               id="password" 
               class="form-control" 
               placeholder="••••••••••••" 
+              oninput="window.validatePassword()" 
               required 
             />
           </div>
 
-          <!-- REAL-TIME PASSWORD CHECKLIST -->
           <div class="password-rules">
-            <div id="rule-len" class="rule-item">
-              <span class="rule-icon">✖</span> At least 12 characters
-            </div>
-            <div id="rule-upper" class="rule-item">
-              <span class="rule-icon">✖</span> Uppercase letter (A-Z)
-            </div>
-            <div id="rule-lower" class="rule-item">
-              <span class="rule-icon">✖</span> Lowercase letter (a-z)
-            </div>
-            <div id="rule-num" class="rule-item">
-              <span class="rule-icon">✖</span> Number (0-9)
-            </div>
-            <div id="rule-spec" class="rule-item">
-              <span class="rule-icon">✖</span> Special character (!@#$%^&*...)
-            </div>
+            <div id="rule-len" class="rule-item"><span class="rule-icon">✖</span> At least 12 characters</div>
+            <div id="rule-upper" class="rule-item"><span class="rule-icon">✖</span> Uppercase letter (A-Z)</div>
+            <div id="rule-lower" class="rule-item"><span class="rule-icon">✖</span> Lowercase letter (a-z)</div>
+            <div id="rule-num" class="rule-item"><span class="rule-icon">✖</span> Number (0-9)</div>
+            <div id="rule-spec" class="rule-item"><span class="rule-icon">✖</span> Special character (!@#$%^&*...)</div>
           </div>
 
           <button type="submit" id="submit-btn" class="btn" disabled>Send Verification Code</button>
@@ -307,17 +190,8 @@
         <form id="otp-form">
           <div class="form-group">
             <label class="form-label" for="otp-code">Enter Code</label>
-            <input 
-              type="text" 
-              id="otp-code" 
-              class="form-control otp-input" 
-              placeholder="12345678" 
-              maxlength="8"
-              autocomplete="one-time-code"
-              required 
-            />
+            <input type="text" id="otp-code" class="form-control otp-input" placeholder="12345678" maxlength="8" autocomplete="one-time-code" required />
           </div>
-
           <button type="submit" id="verify-btn" class="btn">Verify & Complete Sign Up</button>
         </form>
 
@@ -330,9 +204,66 @@
   </main>
 
   <script>
-    /* -------------------------------------------------------------------------
-       SUPABASE INITIALIZATION
-       ------------------------------------------------------------------------- */
+    // 1. Define validatePassword globally so the HTML oninput attribute can always find it
+    window.validatePassword = function() {
+      const passwordInput = document.getElementById('password');
+      if (!passwordInput) return false;
+      
+      const val = passwordInput.value;
+      console.log("Password being validated: ", val.length > 0 ? "*****" : "empty"); // Helps with debugging
+
+      const checks = {
+        'rule-len': val.length >= 12,
+        'rule-upper': /[A-Z]/.test(val),
+        'rule-lower': /[a-z]/.test(val),
+        'rule-num': /[0-9]/.test(val),
+        'rule-spec': /[^a-zA-Z0-9]/.test(val)
+      };
+
+      let allValid = true;
+
+      for (const [id, isValid] of Object.entries(checks)) {
+        const el = document.getElementById(id);
+        if (el) {
+          const icon = el.querySelector('.rule-icon');
+          if (isValid) {
+            el.classList.add('valid');
+            if (icon) icon.textContent = '✔';
+          } else {
+            el.classList.remove('valid');
+            if (icon) icon.textContent = '✖';
+            allValid = false;
+          }
+        }
+      }
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = !allValid;
+      }
+
+      return allValid;
+    };
+
+    // 2. Attach forms and other listeners
+    function initApp() {
+      // Run once on load just in case the browser auto-filled a saved password
+      window.validatePassword();
+
+      const signupForm = document.getElementById('signup-form');
+      if (signupForm) signupForm.addEventListener('submit', handleSignUp);
+
+      const otpForm = document.getElementById('otp-form');
+      if (otpForm) otpForm.addEventListener('submit', handleVerifyOTP);
+
+      const resendLink = document.getElementById('resend-link');
+      if (resendLink) resendLink.addEventListener('click', resendOTP);
+    }
+
+    // Run initialization immediately since script is at the bottom of the body
+    initApp();
+
+    // 3. Supabase Logic
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
     
@@ -342,78 +273,16 @@
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
     } catch (e) {
-      console.error('Supabase init error:', e);
+      console.warn('Supabase client failed to load:', e);
     }
 
     let userEmail = '';
 
-    /* -------------------------------------------------------------------------
-       DOM READY & LIVE PASSWORD VALIDATION
-       ------------------------------------------------------------------------- */
-    document.addEventListener('DOMContentLoaded', () => {
-      const passwordInput = document.getElementById('password');
-      const signupForm = document.getElementById('signup-form');
-      const otpForm = document.getElementById('otp-form');
-      const resendLink = document.getElementById('resend-link');
-
-      // Attach direct input event listeners for instant live updating
-      passwordInput.addEventListener('input', validatePassword);
-      passwordInput.addEventListener('keyup', validatePassword);
-
-      signupForm.addEventListener('submit', handleSignUp);
-      otpForm.addEventListener('submit', handleVerifyOTP);
-      resendLink.addEventListener('click', resendOTP);
-    });
-
-    function validatePassword() {
-      const password = document.getElementById('password').value;
-
-      // Evaluation rules
-      const checks = {
-        len: password.length >= 12,
-        upper: /[A-Z]/.test(password),
-        lower: /[a-z]/.test(password),
-        num: /[0-9]/.test(password),
-        spec: /[^a-zA-Z0-9]/.test(password) // Special characters
-      };
-
-      // Live Update Individual Items
-      updateRuleUI('rule-len', checks.len);
-      updateRuleUI('rule-upper', checks.upper);
-      updateRuleUI('rule-lower', checks.lower);
-      updateRuleUI('rule-num', checks.num);
-      updateRuleUI('rule-spec', checks.spec);
-
-      // Enable button only if ALL 5 conditions pass
-      const isValid = checks.len && checks.upper && checks.lower && checks.num && checks.spec;
-      document.getElementById('submit-btn').disabled = !isValid;
-
-      return isValid;
-    }
-
-    function updateRuleUI(elementId, isValid) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      
-      const icon = el.querySelector('.rule-icon');
-
-      if (isValid) {
-        el.classList.add('valid');
-        if (icon) icon.textContent = '✔';
-      } else {
-        el.classList.remove('valid');
-        if (icon) icon.textContent = '✖';
-      }
-    }
-
-    /* -------------------------------------------------------------------------
-       AUTH ACTIONS
-       ------------------------------------------------------------------------- */
     async function handleSignUp(event) {
       event.preventDefault();
       clearAlert();
 
-      if (!validatePassword()) {
+      if (!window.validatePassword()) {
         showAlert('Password does not meet all security requirements.', 'error');
         return;
       }
@@ -426,7 +295,7 @@
       submitBtn.textContent = 'Sending Code...';
 
       try {
-        if (!supabase) throw new Error('Supabase client failed to load.');
+        if (!supabase) throw new Error('Supabase SDK library not loaded yet. Please try again in a few seconds.');
 
         const { data, error } = await supabase.auth.signUp({
           email: userEmail,
@@ -435,10 +304,9 @@
 
         if (error) throw error;
 
-        // Move to OTP Step
         document.getElementById('step-signup').classList.remove('active');
         document.getElementById('step-otp').classList.add('active');
-        showAlert(`Verification code sent to ${userEmail}. Check your email.`, 'info');
+        showAlert(`Verification code sent to ${userEmail}. Check your inbox.`, 'info');
 
       } catch (err) {
         showAlert(err.message || 'An error occurred during registration.', 'error');
@@ -488,15 +356,9 @@
     async function resendOTP(event) {
       event.preventDefault();
       clearAlert();
-
       try {
         if (!supabase) throw new Error('Supabase client is not configured.');
-
-        const { error } = await supabase.auth.resend({
-          type: 'signup',
-          email: userEmail,
-        });
-
+        const { error } = await supabase.auth.resend({ type: 'signup', email: userEmail });
         if (error) throw error;
         showAlert('A new verification code has been sent to your email.', 'info');
       } catch (err) {
@@ -504,7 +366,6 @@
       }
     }
 
-    /* Helpers */
     function showAlert(msg, type) {
       const alert = document.getElementById('alert-banner');
       alert.textContent = msg;
