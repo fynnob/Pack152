@@ -46,7 +46,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8vh 1.5rem 3rem 1.5rem;
+      padding: 6vh 1.5rem 3rem 1.5rem;
     }
 
     .auth-card {
@@ -62,7 +62,7 @@
 
     .card-header {
       text-align: center;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
 
     .card-header h1 {
@@ -85,7 +85,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--radius-md);
       padding: 0.25rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .tab-btn {
@@ -110,21 +110,21 @@
     /* Passkey Display Box */
     .passkey-box {
       text-align: center;
-      padding: 1.5rem 1rem;
+      padding: 1.25rem 1rem;
       background: rgba(15, 23, 42, 0.4);
       border: 1px dashed rgba(255, 255, 255, 0.2);
       border-radius: var(--radius-md);
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
     }
 
     .passkey-icon {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      font-size: 2.2rem;
+      margin-bottom: 0.35rem;
     }
 
     /* Form Controls */
-    .form-group { margin-bottom: 1.25rem; text-align: left; }
-    .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem; }
+    .form-group { margin-bottom: 1.1rem; text-align: left; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem; }
     .form-control {
       width: 100%;
       padding: 0.75rem 1rem;
@@ -141,7 +141,7 @@
 
     /* Captcha Container */
     .captcha-container {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.1rem;
       display: flex;
       justify-content: center;
     }
@@ -204,11 +204,21 @@
         <button id="tab-email" class="tab-btn" onclick="switchTab('email')">✉️ Email 2FA Code</button>
       </div>
 
-      <!-- VIEW 1: PASSKEY LOGIN (No Captcha Needed - Protected by Biometrics) -->
+      <!-- VIEW 1: PASSKEY LOGIN (Captcha Protected) -->
       <div id="view-passkey" class="auth-view active">
         <div class="passkey-box">
           <div class="passkey-icon">🛡️</div>
-          <p style="font-size: 0.875rem; color: #cbd5e1;">Use your Face ID, Touch ID, or Security Key to sign in instantly.</p>
+          <p style="font-size: 0.85rem; color: #cbd5e1;">Complete the security check, then use your Face ID, Touch ID, or Security Key.</p>
+        </div>
+
+        <!-- hCaptcha Widget for Passkey View -->
+        <div class="captcha-container">
+          <div 
+            class="h-captcha" 
+            data-sitekey="216a0332-7f88-49e2-8436-4eec2ed4fb84" 
+            data-theme="dark"
+            data-callback="onPasskeyCaptchaSuccess">
+          </div>
         </div>
 
         <button type="button" id="btn-passkey-login" class="btn-submit" onclick="loginWithPasskey()">
@@ -226,12 +236,13 @@
             <input type="email" id="login-email" class="form-control" placeholder="parent@example.com" required />
           </div>
 
-          <!-- hCaptcha Widget Container -->
+          <!-- hCaptcha Widget for Email View -->
           <div class="captcha-container">
             <div 
               class="h-captcha" 
-              data-sitekey="10000000-ffff-ffff-ffff-000000000001" 
-              data-theme="dark">
+              data-sitekey="216a0332-7f88-49e2-8436-4eec2ed4fb84" 
+              data-theme="dark"
+              data-callback="onEmailCaptchaSuccess">
             </div>
           </div>
 
@@ -281,6 +292,19 @@
     }
 
     let activeEmail = '';
+    let passkeyCaptchaToken = null;
+    let emailCaptchaToken = null;
+
+    // hCaptcha Callbacks
+    function onPasskeyCaptchaSuccess(token) {
+      passkeyCaptchaToken = token;
+      clearButtonErrors();
+    }
+
+    function onEmailCaptchaSuccess(token) {
+      emailCaptchaToken = token;
+      clearButtonErrors();
+    }
 
     /* Tab Switching */
     function switchTab(method) {
@@ -356,9 +380,14 @@
       }
     }
 
-    /* PASSKEY LOGIN */
+    /* PASSKEY LOGIN WITH CAPTCHA */
     async function loginWithPasskey() {
       clearButtonErrors();
+
+      if (!passkeyCaptchaToken) {
+        setButtonError('btn-passkey-login', '🔑 Sign In with Passkey', 'Please complete the security check.');
+        return;
+      }
 
       if (!window.PublicKeyCredential) {
         setButtonError('btn-passkey-login', '🔑 Sign In with Passkey', 'Passkeys not supported on this device.');
@@ -373,13 +402,20 @@
         if (!supabaseClient) throw new Error('Supabase client not loaded.');
 
         if (supabaseClient.auth && typeof supabaseClient.auth.signInWithPasskey === 'function') {
-          const { data, error } = await supabaseClient.auth.signInWithPasskey();
+          const { data, error } = await supabaseClient.auth.signInWithPasskey({
+            options: {
+              captchaToken: passkeyCaptchaToken
+            }
+          });
           if (error) throw error;
           handleAuthSuccess();
         } else {
           throw new Error('Passkeys are not configured in Supabase.');
         }
       } catch (err) {
+        if (window.hcaptcha) window.hcaptcha.reset();
+        passkeyCaptchaToken = null;
+
         if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
           btn.disabled = false;
           btn.textContent = '🔑 Sign In with Passkey';
@@ -389,7 +425,7 @@
       }
     }
 
-    /* EMAIL 2FA LOGIN WITH CAPTCHA VALIDATION */
+    /* EMAIL 2FA LOGIN WITH CAPTCHA */
     async function handleSendOtp(event) {
       event.preventDefault();
       clearButtonErrors();
@@ -397,14 +433,8 @@
       const emailInput = document.getElementById('login-email');
       activeEmail = emailInput.value.trim();
 
-      // Retrieve Captcha Token from hCaptcha Widget
-      let captchaToken = null;
-      if (window.hcaptcha) {
-        captchaToken = window.hcaptcha.getResponse();
-      }
-
-      if (!captchaToken) {
-        setButtonError('btn-email-submit', '📩 Send Login Code', 'Please complete the Captcha check.');
+      if (!emailCaptchaToken) {
+        setButtonError('btn-email-submit', '📩 Send Login Code', 'Please complete the security check.');
         return;
       }
 
@@ -419,7 +449,7 @@
           email: activeEmail,
           options: {
             shouldCreateUser: false,
-            captchaToken: captchaToken // Sends captcha token to Supabase backend
+            captchaToken: emailCaptchaToken
           }
         });
 
@@ -430,7 +460,8 @@
         document.getElementById('email-verify-form').style.display = 'block';
 
       } catch (err) {
-        if (window.hcaptcha) window.hcaptcha.reset(); // Reset Captcha on error
+        if (window.hcaptcha) window.hcaptcha.reset();
+        emailCaptchaToken = null;
         setButtonError('btn-email-submit', '📩 Send Login Code', err.message || 'Email error');
       }
     }
