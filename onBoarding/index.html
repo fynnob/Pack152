@@ -3,20 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Onboarding — Pack 152 Platform</title>
+  <title>Step 1: Passkey — Pack 152 Onboarding</title>
 
   <!-- Supabase JS Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     /* ==========================================================================
-       1. PACK 152 DESIGN TOKENS
+       1. PACK 152 DESIGN TOKENS & DARK THEME
        ========================================================================== */
     :root {
       --color-primary: #16a34a;         /* Scout Green */
       --color-primary-hover: #15803d;
       --color-secondary: #2563eb;       /* Cub Scout Blue */
-      --color-accent-gold: #d97706;     /* Scout Gold */
       --color-danger: #ef4444;          /* Red */
       --color-success: #22c55e;         /* Green */
 
@@ -34,7 +33,7 @@
       min-height: 100vh;
       font-family: var(--font-sans);
       color: #ffffff;
-      background: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.82)), 
+      background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
                   url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') 
                   center/cover no-repeat fixed;
     }
@@ -44,85 +43,64 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8vh 1.5rem 3rem 1.5rem;
+      padding: 15vh 1.5rem 3rem 1.5rem;
     }
 
     /* Card Layout */
-    .onboard-card {
+    .auth-card {
       background: rgba(30, 41, 59, 0.88);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: var(--radius-lg);
       width: 100%;
-      max-width: 520px;
+      max-width: 440px;
       padding: 2.25rem;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      text-align: center;
     }
 
-    /* Step Progress Indicator */
-    .step-progress {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      position: relative;
-    }
-
-    .step-progress::before {
-      content: '';
-      position: absolute;
-      top: 18px;
-      left: 10%;
-      right: 10%;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.15);
-      z-index: 1;
-    }
-
-    .step-item {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .step-badge {
-      width: 38px;
-      height: 38px;
+    .step-tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
       border-radius: var(--radius-full);
-      background-color: rgba(15, 23, 42, 0.8);
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(22, 163, 74, 0.2);
+      border: 1px solid var(--color-primary);
+      color: #4ade80;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-header h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-header p {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 1.75rem;
+    }
+
+    /* Key Icon Graphic */
+    .icon-badge {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem auto;
+      background: rgba(22, 163, 74, 0.15);
+      border: 2px solid var(--color-primary);
+      border-radius: var(--radius-full);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: #94a3b8;
-      transition: all 0.3s ease;
+      font-size: 2.5rem;
+      box-shadow: 0 0 25px rgba(22, 163, 74, 0.25);
     }
-
-    .step-item.active .step-badge {
-      background-color: var(--color-primary);
-      border-color: #4ade80;
-      color: #ffffff;
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
-    }
-
-    .step-item.completed .step-badge {
-      background-color: var(--color-secondary);
-      border-color: #60a5fa;
-      color: #ffffff;
-    }
-
-    .step-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #94a3b8;
-    }
-
-    .step-item.active .step-label { color: #ffffff; }
 
     /* Alert Banner */
     .alert-banner {
@@ -132,93 +110,11 @@
       font-size: 0.875rem;
       margin-bottom: 1.25rem;
       line-height: 1.4;
+      text-align: left;
     }
     .alert-banner.error { display: block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); color: #fca5a5; }
     .alert-banner.info { display: block; background-color: rgba(37, 99, 235, 0.2); border: 1px solid var(--color-secondary); color: #93c5fd; }
     .alert-banner.success { display: block; background-color: rgba(34, 197, 94, 0.2); border: 1px solid var(--color-success); color: #86efac; }
-
-    /* Step Panes */
-    .step-pane { display: none; }
-    .step-pane.active { display: block; }
-
-    .step-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .step-header h2 {
-      font-size: 1.65rem;
-      font-weight: 800;
-      margin-bottom: 0.4rem;
-    }
-
-    .step-header p {
-      font-size: 0.95rem;
-      color: #94a3b8;
-      line-height: 1.5;
-    }
-
-    /* Passkey Graphic Display */
-    .passkey-hero {
-      text-align: center;
-      padding: 1.5rem;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--radius-lg);
-      margin-bottom: 1.5rem;
-    }
-
-    .passkey-icon-wrapper {
-      width: 72px;
-      height: 72px;
-      margin: 0 auto 1rem auto;
-      background: rgba(22, 163, 74, 0.15);
-      border: 2px solid var(--color-primary);
-      border-radius: var(--radius-full);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.2rem;
-      box-shadow: 0 0 20px rgba(22, 163, 74, 0.25);
-    }
-
-    .passkey-features {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      text-align: left;
-      font-size: 0.85rem;
-      color: #cbd5e1;
-      margin-top: 1rem;
-    }
-
-    .passkey-feature-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* Form Controls */
-    .form-group { margin-bottom: 1.25rem; }
-    .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem; }
-    .form-control {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 0.95rem;
-      font-family: var(--font-sans);
-      background-color: rgba(15, 23, 42, 0.6);
-      border: 1.5px solid rgba(255, 255, 255, 0.2);
-      border-radius: var(--radius-md);
-      color: #ffffff;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-    .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
-
-    select.form-control option {
-      background-color: #0f172a;
-      color: #ffffff;
-    }
 
     /* Buttons */
     .btn-stack {
@@ -270,132 +166,37 @@
 <body>
 
   <main class="page-wrapper">
-    <div class="onboard-card">
+    <div class="auth-card">
+      
+      <span class="step-tag">Step 1 of 2</span>
+      
+      <div class="icon-badge">🔑</div>
 
-      <!-- STEP PROGRESS INDICATOR -->
-      <div class="step-progress">
-        <div id="prog-step-1" class="step-item active">
-          <div class="step-badge">1</div>
-          <span class="step-label">Passkey</span>
-        </div>
-        <div id="prog-step-2" class="step-item">
-          <div class="step-badge">2</div>
-          <span class="step-label">Scout Profile</span>
-        </div>
-        <div id="prog-step-3" class="step-item">
-          <div class="step-badge">3</div>
-          <span class="step-label">Ready</span>
-        </div>
+      <div class="card-header">
+        <h1>Create a Passkey</h1>
+        <p>Sign in instantly without passwords using Face ID, Touch ID, or your device PIN.</p>
       </div>
 
-      <!-- ALERT MESSAGE BANNER -->
+      <!-- Alert Banner -->
       <div id="alert-banner" class="alert-banner"></div>
 
-      <!-- ==========================================================================
-         STEP 1: CREATE A PASSKEY
-         ========================================================================== -->
-      <div id="step-pane-1" class="step-pane active">
-        <div class="step-header">
-          <h2>Create Your Passkey</h2>
-          <p>Sign in instantly without typing passwords using Face ID, Touch ID, or your device PIN.</p>
-        </div>
-
-        <div class="passkey-hero">
-          <div class="passkey-icon-wrapper">🔑</div>
-          <h3 style="font-size: 1.1rem; font-weight: 700;">Fast & Phishing-Resistant</h3>
-          <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem;">
-            Your passkey stays safely encrypted on your phone or computer.
-          </p>
-
-          <div class="passkey-features">
-            <div class="passkey-feature-item">
-              <span style="color: #4ade80;">✔</span> No passwords to remember or lose
-            </div>
-            <div class="passkey-feature-item">
-              <span style="color: #4ade80;">✔</span> Works with Apple Touch/Face ID, Windows Hello, or Android
-            </div>
-            <div class="passkey-feature-item">
-              <span style="color: #4ade80;">✔</span> One-tap access to Pack 152 updates
-            </div>
-          </div>
-        </div>
-
-        <div class="btn-stack">
-          <button type="button" id="create-passkey-btn" class="btn btn-primary" onclick="createPasskey()">
-            🛡️ Create Passkey Now
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="nextStep(2)">
-            Skip Passkey Creation
-          </button>
-        </div>
-      </div>
-
-
-      <!-- ==========================================================================
-         STEP 2: SCOUT / PARENT PROFILE
-         ========================================================================== -->
-      <div id="step-pane-2" class="step-pane">
-        <div class="step-header">
-          <h2>Pack Profile Setup</h2>
-          <p>Tell us a little about your family to customize your Pack 152 feed.</p>
-        </div>
-
-        <form id="profile-form" onsubmit="handleProfileSubmit(event)">
-          <div class="form-group">
-            <label class="form-label" for="parent-name">Parent / Guardian Full Name</label>
-            <input type="text" id="parent-name" class="form-control" placeholder="e.g. Sarah Jenkins" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="scout-name">Scout First Name</label>
-            <input type="text" id="scout-name" class="form-control" placeholder="e.g. Alex" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="den-rank">Scout Rank / Den</label>
-            <select id="den-rank" class="form-control" required>
-              <option value="" disabled selected>Select rank...</option>
-              <option value="lion">🦁 Lion (Kindergarten)</option>
-              <option value="tiger">🐯 Tiger (1st Grade)</option>
-              <option value="wolf">🐺 Wolf (2nd Grade)</option>
-              <option value="bear">🐻 Bear (3rd Grade)</option>
-              <option value="webelos">🏕️ Webelos (4th Grade)</option>
-              <option value="aol">🛡️ Arrow of Light (5th Grade)</option>
-              <option value="leader">👔 Adult Leader / Volunteer</option>
-            </select>
-          </div>
-
-          <div class="btn-stack">
-            <button type="submit" class="btn btn-primary">Save Profile & Continue</button>
-          </div>
-        </form>
-      </div>
-
-
-      <!-- ==========================================================================
-         STEP 3: ALL SET / COMPLETE
-         ========================================================================== -->
-      <div id="step-pane-3" class="step-pane">
-        <div class="step-header">
-          <div style="font-size: 3rem; margin-bottom: 0.5rem;">⚜️</div>
-          <h2>Welcome to Pack 152!</h2>
-          <p>Your onboarding is complete. You can now access event calendars, rank advancement trackers, and den news.</p>
-        </div>
-
-        <div class="btn-stack">
-          <button type="button" class="btn btn-primary" onclick="finishOnboarding()">
-            Go to Pack Portal
-          </button>
-        </div>
+      <!-- Action Buttons -->
+      <div class="btn-stack">
+        <button type="button" id="create-passkey-btn" class="btn btn-primary" onclick="createPasskey()">
+          🛡️ Create Passkey
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="skipStep()">
+          Skip for Now
+        </button>
       </div>
 
     </div>
   </main>
 
   <script>
-    // -------------------------------------------------------------------------
-    // 1. SUPABASE CLIENT SETUP (WITH EXPERIMENTAL PASSKEY FLAG)
-    // -------------------------------------------------------------------------
+    /* ==========================================================================
+       SUPABASE CLIENT SETUP (WITH EXPERIMENTAL PASSKEY OPTION)
+       ========================================================================== */
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 
@@ -414,9 +215,60 @@
       console.warn('Supabase initialization warning:', err);
     }
 
-    // -------------------------------------------------------------------------
-    // 2. ALERT HELPERS
-    // -------------------------------------------------------------------------
+    /* ==========================================================================
+       PASSKEY CREATION FUNCTION
+       ========================================================================== */
+    async function createPasskey() {
+      clearAlert();
+
+      // Check browser WebAuthn support
+      if (!window.PublicKeyCredential) {
+        showAlert('Passkeys are not supported by your current browser. Redirecting...', 'info');
+        setTimeout(skipStep, 1500);
+        return;
+      }
+
+      const btn = document.getElementById('create-passkey-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Prompting Biometrics...';
+      }
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client failed to initialize.');
+
+        // Trigger WebAuthn Passkey Registration Ceremony
+        if (supabaseClient.auth && typeof supabaseClient.auth.registerPasskey === 'function') {
+          const { data, error } = await supabaseClient.auth.registerPasskey();
+          if (error) throw error;
+        } else {
+          throw new Error('Passkeys are disabled or not available in this SDK build.');
+        }
+
+        showAlert('✔ Passkey created successfully! Redirecting...', 'success');
+        setTimeout(skipStep, 1000);
+
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🛡️ Create Passkey';
+        }
+
+        if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
+          showAlert('Passkey creation was cancelled. You can try again or click Skip.', 'info');
+        } else {
+          showAlert(err.message || 'Passkey setup failed. You can skip this step.', 'error');
+        }
+      }
+    }
+
+    /* ==========================================================================
+       REDIRECT TO STEP 2 (PROFILE SETUP)
+       ========================================================================== */
+    function skipStep() {
+      window.location.href = '/onBoarding/profile.html';
+    }
+
     function showAlert(msg, type) {
       const alert = document.getElementById('alert-banner');
       if (alert) {
@@ -431,105 +283,6 @@
         alert.className = 'alert-banner';
         alert.textContent = '';
       }
-    }
-
-    // -------------------------------------------------------------------------
-    // 3. STEP SWITCHING
-    // -------------------------------------------------------------------------
-    function nextStep(stepNumber) {
-      clearAlert();
-
-      document.querySelectorAll('.step-pane').forEach(pane => pane.classList.remove('active'));
-      const targetPane = document.getElementById(`step-pane-${stepNumber}`);
-      if (targetPane) targetPane.classList.add('active');
-
-      for (let i = 1; i <= 3; i++) {
-        const item = document.getElementById(`prog-step-${i}`);
-        if (item) {
-          if (i < stepNumber) {
-            item.className = 'step-item completed';
-          } else if (i === stepNumber) {
-            item.className = 'step-item active';
-          } else {
-            item.className = 'step-item';
-          }
-        }
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // 4. CREATE PASSKEY
-    // -------------------------------------------------------------------------
-    async function createPasskey() {
-      clearAlert();
-
-      if (!window.PublicKeyCredential) {
-        showAlert('Passkeys are not supported by your current browser. You can skip this step.', 'info');
-        return;
-      }
-
-      const btn = document.getElementById('create-passkey-btn');
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Prompting Biometrics...';
-      }
-
-      try {
-        if (!supabaseClient) throw new Error('Supabase client failed to initialize.');
-
-        if (supabaseClient.auth && typeof supabaseClient.auth.registerPasskey === 'function') {
-          const { data, error } = await supabaseClient.auth.registerPasskey();
-          if (error) throw error;
-        } else {
-          throw new Error('Passkey feature is not available in this build of the SDK.');
-        }
-
-        showAlert('✔ Passkey created successfully!', 'success');
-        setTimeout(() => { nextStep(2); }, 1200);
-
-      } catch (err) {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = '🛡️ Create Passkey Now';
-        }
-
-        if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
-          showAlert('Passkey setup was cancelled. You can try again or skip.', 'info');
-        } else {
-          showAlert(err.message || 'Passkey setup failed. You may skip this step.', 'error');
-        }
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // 5. STEP 2: PROFILE SUBMISSION & COMPLETE
-    // -------------------------------------------------------------------------
-    async function handleProfileSubmit(event) {
-      event.preventDefault();
-      clearAlert();
-
-      const parentName = document.getElementById('parent-name').value.trim();
-      const scoutName = document.getElementById('scout-name').value.trim();
-      const denRank = document.getElementById('den-rank').value;
-
-      try {
-        if (supabaseClient && supabaseClient.auth) {
-          await supabaseClient.auth.updateUser({
-            data: {
-              parent_name: parentName,
-              scout_name: scoutName,
-              den_rank: denRank
-            }
-          });
-        }
-        nextStep(3);
-      } catch (err) {
-        showAlert(err.message || 'Error saving profile.', 'error');
-      }
-    }
-
-    function finishOnboarding() {
-      window.location.href = '/';
     }
   </script>
 
