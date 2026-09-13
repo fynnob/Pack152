@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leader Portal — Pack 152</title>
+
+  <!-- Supabase Client & Auth Guard -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/auth-guard.js"></script>
+
+  <style>
+    :root {
+      --color-primary: #16a34a;
+      --color-primary-hover: #15803d;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-lg: 1rem;
+      --radius-md: 0.625rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background-color: #0f172a;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .navbar h1 { font-size: 1.35rem; font-weight: 800; color: #4ade80; }
+
+    .nav-actions { display: flex; gap: 1rem; align-items: center; }
+
+    .btn-nav {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .hub-title { margin-bottom: 2rem; }
+    .hub-title h2 { font-size: 1.85rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .hub-title p { color: #94a3b8; font-size: 0.95rem; }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .app-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: #ffffff;
+    }
+
+    .app-card:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+    }
+
+    .app-icon { font-size: 2.2rem; }
+    .app-card h3 { font-size: 1.2rem; font-weight: 700; }
+    .app-card p { font-size: 0.875rem; color: #94a3b8; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <h1>Pack 152 — Leader Portal</h1>
+    <div class="nav-actions">
+      <a href="/select" class="btn-nav">Switch View</a>
+      <button class="btn-nav" onclick="signOut()">Log Out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="hub-title">
+      <h2>Leader Management Dashboard</h2>
+      <p>Select an administrative module to manage pack operations.</p>
+    </div>
+
+    <div class="app-grid">
+      <!-- App 1: Approve Users (Leader Exclusive) -->
+      <a href="/Leader/ApproveUsers/" class="app-card">
+        <div class="app-icon">👥</div>
+        <h3>Approve Users</h3>
+        <p>Review pending registration profiles, assign roles (parent/leader), or reject requests.</p>
+      </a>
+
+      <!-- App 2: Leader Medical Records Overview -->
+      <a href="/Leader/MedicalForms/" class="app-card">
+        <div class="app-icon">🏥</div>
+        <h3>Medical Records</h3>
+        <p>Review submitted medical forms and emergency contact data for all pack scouts.</p>
+      </a>
+
+      <!-- App 3: Leader Order Management -->
+      <a href="/Leader/Order/" class="app-card">
+        <div class="app-icon">🛒</div>
+        <h3>Order Management</h3>
+        <p>Manage pack inventory, process gear orders, and track payments.</p>
+      </a>
+    </div>
+  </main>
+
+  <script>
+    async function signOut() {
+      const client = window.supabase.createClient(
+        'https://ygoxjtgoyoxjcvtypoii.supabase.co',
+        'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia'
+      );
+      await client.auth.signOut();
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>

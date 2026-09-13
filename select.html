@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select View — Pack 152 Platform</title>
+
+  <!-- Supabase JS Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Auth Guard Script -->
+  <script src="/auth-guard.js"></script>
+
+  <style>
+    :root {
+      --color-primary: #16a34a;
+      --color-primary-hover: #15803d;
+      --color-secondary: #2563eb;
+      --color-secondary-hover: #1d4ed8;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-lg: 1rem;
+      --radius-md: 0.625rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
+                  url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') 
+                  center/cover no-repeat fixed;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .header-text {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .header-text h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-text p {
+      color: #94a3b8;
+      font-size: 1rem;
+    }
+
+    /* Responsive 2-Card Container */
+    .selection-grid {
+      display: flex;
+      flex-direction: column; /* Vertical layout on mobile */
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 860px;
+    }
+
+    @media (min-width: 768px) {
+      .selection-grid {
+        flex-direction: row; /* Horizontal layout on computers */
+      }
+    }
+
+    .select-card {
+      flex: 1;
+      background: rgba(30, 41, 59, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+
+    .select-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    }
+
+    .card-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .select-card h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+    }
+
+    .select-card p {
+      font-size: 0.925rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin-bottom: 1.75rem;
+      flex-grow: 1;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: #ffffff;
+    }
+
+    .btn-parent { background-color: var(--color-secondary); }
+    .btn-parent:hover { background-color: var(--color-secondary-hover); }
+
+    .btn-leader { background-color: var(--color-primary); }
+    .btn-leader:hover { background-color: var(--color-primary-hover); }
+  </style>
+</head>
+<body>
+
+  <main class="page-wrapper">
+    <div class="header-text">
+      <h1>Select Session View</h1>
+      <p>Choose how you would like to interact with Pack 152 for this session.</p>
+    </div>
+
+    <div class="selection-grid">
+      <!-- Card 1: Family / Parent View -->
+      <div class="select-card" onclick="window.location.href='/Platform/'">
+        <div class="card-icon">👨‍👩‍👧‍👦</div>
+        <h2>Parent / Family View</h2>
+        <p>Access family orders, scout medical forms, event calendars, and rank progression for your children.</p>
+        <button class="btn btn-parent">Enter Platform</button>
+      </div>
+
+      <!-- Card 2: Leader Portal View -->
+      <div class="select-card" onclick="window.location.href='/Leader/'">
+        <div class="card-icon">👔</div>
+        <h2>Leader Portal</h2>
+        <p>Manage pack approvals, review medical records, issue orders, and handle pack administration.</p>
+        <button class="btn btn-leader">Enter Leader Portal</button>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

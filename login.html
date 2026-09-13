@@ -251,11 +251,11 @@
           </button>
         </form>
 
-        <!-- Step B: Enter Received 6-Digit OTP Code -->
+        <!-- Step B: Enter Received 8-Digit OTP Code -->
         <form id="email-verify-form" onsubmit="handleVerifyOtp(event)" style="display: none;">
           <div class="form-group">
-            <label class="form-label" for="otp-code">6-Digit Verification Code</label>
-            <input type="text" id="otp-code" class="form-control" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required />
+            <label class="form-label" for="otp-code">8-Digit Verification Code</label>
+            <input type="text" id="otp-code" class="form-control" placeholder="12345678" maxlength="8" pattern="[0-9]{8}" required />
             <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.35rem;">Check your inbox for the code.</div>
           </div>
 
