@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up — Pack 152 Platform</title>
 
-  <!-- Supabase JS Client Library (Added defer so it doesn't block page load) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- Supabase JS Client Library (Removed defer so it loads before page scripts) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
@@ -153,7 +153,6 @@
 
           <div class="form-group">
             <label class="form-label" for="password">Password</label>
-            <!-- Added inline oninput directly back to the element -->
             <input 
               type="password" 
               id="password" 
@@ -204,13 +203,12 @@
   </main>
 
   <script>
-    // 1. Define validatePassword globally so the HTML oninput attribute can always find it
+    // 1. Password live validation
     window.validatePassword = function() {
       const passwordInput = document.getElementById('password');
       if (!passwordInput) return false;
       
       const val = passwordInput.value;
-      console.log("Password being validated: ", val.length > 0 ? "*****" : "empty"); // Helps with debugging
 
       const checks = {
         'rule-len': val.length >= 12,
@@ -245,9 +243,25 @@
       return allValid;
     };
 
-    // 2. Attach forms and other listeners
+    // 2. Supabase Configuration & Dynamic Client Getter
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    
+    let supabaseClient = null;
+
+    function getSupabase() {
+      if (supabaseClient) return supabaseClient;
+      if (window.supabase && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return supabaseClient;
+      }
+      return null;
+    }
+
+    let userEmail = '';
+
+    // 3. Attach Form Listeners
     function initApp() {
-      // Run once on load just in case the browser auto-filled a saved password
       window.validatePassword();
 
       const signupForm = document.getElementById('signup-form');
@@ -260,24 +274,9 @@
       if (resendLink) resendLink.addEventListener('click', resendOTP);
     }
 
-    // Run initialization immediately since script is at the bottom of the body
     initApp();
 
-    // 3. Supabase Logic
-    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
-    
-    let supabase = null;
-    try {
-      if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-    } catch (e) {
-      console.warn('Supabase client failed to load:', e);
-    }
-
-    let userEmail = '';
-
+    // 4. Auth Actions
     async function handleSignUp(event) {
       event.preventDefault();
       clearAlert();
@@ -295,9 +294,10 @@
       submitBtn.textContent = 'Sending Code...';
 
       try {
-        if (!supabase) throw new Error('Supabase SDK library not loaded yet. Please try again in a few seconds.');
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase SDK failed to load. Please refresh the page and try again.');
 
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await client.auth.signUp({
           email: userEmail,
           password: password,
         });
@@ -331,9 +331,10 @@
       verifyBtn.textContent = 'Verifying...';
 
       try {
-        if (!supabase) throw new Error('Supabase client is not configured.');
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase client is not configured.');
 
-        const { data, error } = await supabase.auth.verifyOtp({
+        const { data, error } = await client.auth.verifyOtp({
           email: userEmail,
           token: otpCode,
           type: 'signup'
@@ -357,8 +358,9 @@
       event.preventDefault();
       clearAlert();
       try {
-        if (!supabase) throw new Error('Supabase client is not configured.');
-        const { error } = await supabase.auth.resend({ type: 'signup', email: userEmail });
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase client is not configured.');
+        const { error } = await client.auth.resend({ type: 'signup', email: userEmail });
         if (error) throw error;
         showAlert('A new verification code has been sent to your email.', 'info');
       } catch (err) {
