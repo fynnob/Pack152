@@ -126,6 +126,11 @@
       color: #94a3b8;
     }
   </style>
+  <script>
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+        window.location.href = '/onBoarding/' + window.location.hash;
+    }
+  </script>
 </head>
 <body>
 

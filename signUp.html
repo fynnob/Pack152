@@ -181,7 +181,7 @@
             <div id="rule-spec" class="rule-item"><span class="rule-icon">✖</span> Special character (!@#$%^&*...)</div>
           </div>
 
-          <!-- hCaptcha Container with your Site Key -->
+          <!-- hCaptcha Container -->
           <div class="hcaptcha-wrapper">
             <div 
               class="h-captcha" 
@@ -191,7 +191,7 @@
             </div>
           </div>
 
-          <button type="submit" id="submit-btn" class="btn" disabled>Send Verification Code</button>
+          <button type="submit" id="submit-btn" class="btn" disabled>Send Verification</button>
         </form>
 
         <div class="footer-link">
@@ -199,23 +199,23 @@
         </div>
       </div>
 
-      <!-- STEP 2: OTP VERIFICATION -->
+      <!-- STEP 2: OTP / EMAIL CONFIRMATION -->
       <div id="step-otp" class="step-pane">
         <div class="card-header">
-          <h1>Verify Email</h1>
-          <p>Enter the code sent to your email</p>
+          <h1>Check Your Email</h1>
+          <p>Click the link in your email <strong>OR</strong> enter the verification code below.</p>
         </div>
 
         <form id="otp-form">
           <div class="form-group">
-            <label class="form-label" for="otp-code">Enter Code</label>
-            <input type="text" id="otp-code" class="form-control otp-input" placeholder="123456" maxlength="8" autocomplete="one-time-code" required />
+            <label class="form-label" for="otp-code">Verification Code (Optional if clicking link)</label>
+            <input type="text" id="otp-code" class="form-control otp-input" placeholder="123456" maxlength="8" autocomplete="one-time-code" />
           </div>
-          <button type="submit" id="verify-btn" class="btn">Verify & Complete Sign Up</button>
+          <button type="submit" id="verify-btn" class="btn">Verify Code & Complete Sign Up</button>
         </form>
 
         <div class="footer-link">
-          Didn't receive a code? <a href="#" id="resend-link">Resend Code</a>
+          Didn't receive an email? <a href="#" id="resend-link">Resend Email</a>
         </div>
       </div>
 
@@ -268,7 +268,6 @@
         }
       }
 
-      // Check Captcha if present in DOM
       const hcaptchaElement = document.querySelector('.h-captcha');
       const isCaptchaSolved = !hcaptchaElement || Boolean(hcaptchaToken);
 
@@ -300,6 +299,9 @@
     function initApp() {
       window.validatePassword();
 
+      // Check if user returned here after clicking an email link (#access_token=...)
+      checkExistingSessionOrHash();
+
       const signupForm = document.getElementById('signup-form');
       if (signupForm) signupForm.addEventListener('submit', handleSignUp);
 
@@ -308,6 +310,23 @@
 
       const resendLink = document.getElementById('resend-link');
       if (resendLink) resendLink.addEventListener('click', resendOTP);
+    }
+
+    // Auto-detect when a user clicks the confirmation link in their email
+    async function checkExistingSessionOrHash() {
+      if (window.location.hash.includes('access_token')) {
+        showAlert('Email verified successfully! Redirecting...', 'info');
+        setTimeout(() => { window.location.href = '/onBoarding/'; }, 1000);
+        return;
+      }
+
+      const client = getSupabase();
+      if (client) {
+        const { data: { session } } = await client.auth.getSession();
+        if (session) {
+          window.location.href = '/onBoarding/';
+        }
+      }
     }
 
     initApp();
@@ -326,13 +345,17 @@
       const submitBtn = document.getElementById('submit-btn');
 
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending Code...';
+      submitBtn.textContent = 'Sending Verification...';
 
       try {
         const client = getSupabase();
-        if (!client) throw new Error('Supabase SDK failed to load. Please refresh the page and try again.');
+        if (!client) throw new Error('Supabase SDK failed to load. Please refresh the page.');
 
-        const signUpOptions = {};
+        // Direct email confirmation links to /onBoarding/
+        const signUpOptions = {
+          emailRedirectTo: window.location.origin + '/onBoarding/'
+        };
+
         if (hcaptchaToken) {
           signUpOptions.captchaToken = hcaptchaToken;
         }
@@ -347,14 +370,14 @@
 
         document.getElementById('step-signup').classList.remove('active');
         document.getElementById('step-otp').classList.add('active');
-        showAlert(`Verification code sent to ${userEmail}. Check your inbox.`, 'info');
+        showAlert(`Verification email sent to ${userEmail}. Please check your inbox.`, 'info');
 
       } catch (err) {
         showAlert(err.message || 'An error occurred during registration.', 'error');
         submitBtn.disabled = false;
         if (window.hcaptcha) window.hcaptcha.reset();
         hcaptchaToken = null;
-        submitBtn.textContent = 'Send Verification Code';
+        submitBtn.textContent = 'Send Verification';
       }
     }
 
@@ -366,7 +389,7 @@
       const verifyBtn = document.getElementById('verify-btn');
 
       if (!otpCode) {
-        showAlert('Please enter the verification code.', 'error');
+        showAlert('Please enter the verification code or click the link sent to your email.', 'error');
         return;
       }
 
@@ -393,7 +416,7 @@
       } catch (err) {
         showAlert(err.message || 'Invalid or expired code. Please try again.', 'error');
         verifyBtn.disabled = false;
-        verifyBtn.textContent = 'Verify & Complete Sign Up';
+        verifyBtn.textContent = 'Verify Code & Complete Sign Up';
       }
     }
 
@@ -403,11 +426,15 @@
       try {
         const client = getSupabase();
         if (!client) throw new Error('Supabase client is not configured.');
-        const { error } = await client.auth.resend({ type: 'signup', email: userEmail });
+        const { error } = await client.auth.resend({ 
+          type: 'signup', 
+          email: userEmail,
+          options: { emailRedirectTo: window.location.origin + '/onBoarding/' }
+        });
         if (error) throw error;
-        showAlert('A new verification code has been sent to your email.', 'info');
+        showAlert('A new verification email has been sent.', 'info');
       } catch (err) {
-        showAlert(err.message || 'Failed to resend verification code.', 'error');
+        showAlert(err.message || 'Failed to resend verification email.', 'error');
       }
     }
 
