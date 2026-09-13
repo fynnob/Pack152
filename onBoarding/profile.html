@@ -14,6 +14,7 @@
       --color-primary-hover: #15803d;
       --color-secondary: #2563eb;
       --color-danger: #ef4444;
+      --color-warning: #eab308;
       --color-success: #22c55e;
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --radius-md: 0.625rem;
@@ -68,7 +69,7 @@
     .card-header p { font-size: 0.95rem; color: #94a3b8; margin-bottom: 1.5rem; }
 
     .section-title {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
       color: #4ade80;
       margin: 1.5rem 0 0.75rem 0;
@@ -86,9 +87,12 @@
     }
     .alert-banner.error { display: block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); color: #fca5a5; }
     .alert-banner.info { display: block; background-color: rgba(37, 99, 235, 0.2); border: 1px solid var(--color-secondary); color: #93c5fd; }
+    .alert-banner.warning { display: block; background-color: rgba(234, 179, 8, 0.2); border: 1px solid var(--color-warning); color: #fef08a; }
 
     .form-group { margin-bottom: 1.1rem; text-align: left; }
     .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem; }
+    .form-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
+
     .form-control {
       width: 100%;
       padding: 0.75rem 1rem;
@@ -104,14 +108,13 @@
     .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
     select.form-control option { background-color: #0f172a; color: #ffffff; }
 
-    /* Kids Container & Rows */
+    /* Dynamic Kid Rows */
     .kid-row {
       background: rgba(15, 23, 42, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--radius-md);
       padding: 1rem;
       margin-bottom: 0.85rem;
-      position: relative;
     }
 
     .kid-row-header {
@@ -132,7 +135,6 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .btn-remove-kid:hover { text-decoration: underline; }
 
     .btn-add-kid {
       width: 100%;
@@ -163,6 +165,14 @@
     }
     .btn-submit:hover:not(:disabled) { background-color: var(--color-primary-hover); transform: translateY(-1px); }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Pending Review Screen */
+    .review-screen {
+      display: none;
+      text-align: center;
+    }
+    .review-screen.active { display: block; }
+    .review-icon { font-size: 3rem; margin-bottom: 1rem; }
   </style>
 </head>
 <body>
@@ -171,57 +181,99 @@
     <div class="auth-card">
       <span class="step-tag">Step 2 of 2</span>
       
-      <div class="card-header">
-        <h1>Family Profile</h1>
-        <p>Complete your guardian and scout information to get started.</p>
+      <!-- FORM CONTAINER -->
+      <div id="form-container">
+        <div class="card-header">
+          <h1>Family Profile</h1>
+          <p>Complete your guardian and scout details for Pack 152.</p>
+        </div>
+
+        <div id="alert-banner" class="alert-banner"></div>
+
+        <form id="profile-form" onsubmit="handleProfileSubmit(event)">
+          
+          <!-- Primary Guardian -->
+          <div class="section-title">Primary Guardian</div>
+          
+          <div class="form-group">
+            <label class="form-label" for="parent-name">Full Name</label>
+            <input type="text" id="parent-name" class="form-control" placeholder="e.g. Jane Doe" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="phone-number">International Phone Number</label>
+            <input 
+              type="tel" 
+              id="phone-number" 
+              class="form-control" 
+              placeholder="+1 555 1234567" 
+              oninput="formatIntlPhone(this)"
+              required 
+            />
+            <div class="form-hint">Format: + (country code) (area code) (rest)</div>
+          </div>
+
+          <!-- Secondary Guardian -->
+          <div class="section-title">Secondary Guardian / Other Parent (Optional)</div>
+
+          <div class="form-group">
+            <label class="form-label" for="other-guardian-name">Name</label>
+            <input type="text" id="other-guardian-name" class="form-control" placeholder="e.g. John Doe" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="other-guardian-phone">Phone Number</label>
+            <input 
+              type="tel" 
+              id="other-guardian-phone" 
+              class="form-control" 
+              placeholder="+1 555 9876543" 
+              oninput="formatIntlPhone(this)"
+            />
+          </div>
+
+          <!-- Kids / Scouts Section -->
+          <div class="section-title">Children / Scouts</div>
+
+          <div id="kids-container">
+            <!-- Dynamic Kid Rows -->
+          </div>
+
+          <button type="button" class="btn-add-kid" onclick="addKidRow()">+ Add Another Child</button>
+
+          <!-- 128-Bit Bypass Key -->
+          <div class="section-title">Instant Approval Bypass Key (Optional)</div>
+          <div class="form-group">
+            <label class="form-label" for="bypass-key">128-Bit Key</label>
+            <input 
+              type="text" 
+              id="bypass-key" 
+              class="form-control" 
+              placeholder="e.g. e4d909c290d0fb1ca068ffaddf22cbd0" 
+              maxlength="32"
+            />
+            <div class="form-hint">Provided by Leaders for instant account approval. Leave blank for standard review.</div>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn-submit">Submit Profile for Review</button>
+        </form>
       </div>
 
-      <div id="alert-banner" class="alert-banner"></div>
+      <!-- PENDING REVIEW SCREEN -->
+      <div id="review-screen" class="review-screen">
+        <div class="review-icon">⏳</div>
+        <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem;">Profile Under Review</h2>
+        <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+          Thank you! Your profile has been submitted. A Pack 152 Leader or Cub Master will review and approve your account shortly.
+        </p>
+        <button class="btn-submit" onclick="window.location.href='/'">Return to Home</button>
+      </div>
 
-      <form id="profile-form" onsubmit="handleProfileSubmit(event)">
-        
-        <!-- Primary Guardian -->
-        <div class="section-title">Primary Guardian</div>
-        
-        <div class="form-group">
-          <label class="form-label" for="parent-name">Full Name</label>
-          <input type="text" id="parent-name" class="form-control" placeholder="e.g. Jane Doe" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="phone-number">Phone Number</label>
-          <input type="tel" id="phone-number" class="form-control" placeholder="(555) 000-0000" required />
-        </div>
-
-        <!-- Secondary Guardian (Optional) -->
-        <div class="section-title">Secondary Guardian / Other Parent (Optional)</div>
-
-        <div class="form-group">
-          <label class="form-label" for="other-guardian-name">Name</label>
-          <input type="text" id="other-guardian-name" class="form-control" placeholder="e.g. John Doe" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="other-guardian-phone">Phone Number</label>
-          <input type="tel" id="other-guardian-phone" class="form-control" placeholder="(555) 000-0000" />
-        </div>
-
-        <!-- Kids / Scouts Section -->
-        <div class="section-title">Children / Scouts</div>
-
-        <div id="kids-container">
-          <!-- Dynamic Kid Rows Inserted Here -->
-        </div>
-
-        <button type="button" class="btn-add-kid" onclick="addKidRow()">+ Add Another Child</button>
-
-        <button type="submit" id="submit-btn" class="btn-submit">Complete Onboarding</button>
-      </form>
     </div>
   </main>
 
   <script>
-    // Supabase Credentials
+    // Supabase Initialization
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 
@@ -234,9 +286,39 @@
       console.warn('Supabase initialization error:', err);
     }
 
+    /* -------------------------------------------------------------------------
+       INTERNATIONAL PHONE FORMATTER: + (country) (area) (rest)
+       ------------------------------------------------------------------------- */
+    function formatIntlPhone(input) {
+      let val = input.value;
+      
+      // Ensure leading +
+      if (!val.startsWith('+')) {
+        val = '+' + val.replace(/\+/g, '');
+      }
+
+      // Keep only digits after +
+      let digits = val.substring(1).replace(/\D/g, '');
+      
+      let formatted = '+';
+      if (digits.length > 0) {
+        let country = digits.substring(0, Math.min(digits.length, 2)); // 1-2 digit country code
+        let area = digits.length > 2 ? digits.substring(2, Math.min(digits.length, 5)) : ''; // 3 digit area code
+        let rest = digits.length > 5 ? digits.substring(5) : '';
+
+        formatted += country;
+        if (area) formatted += ' ' + area;
+        if (rest) formatted += ' ' + rest;
+      }
+
+      input.value = formatted;
+    }
+
+    /* -------------------------------------------------------------------------
+       DYNAMIC KIDS LIST
+       ------------------------------------------------------------------------- */
     let kidCount = 0;
 
-    // Rank options required by prompt
     const RANK_OPTIONS = `
       <option value="" disabled selected>Select Rank / Status...</option>
       <option value="Pre-Cub Scout">🧸 Pre-Cub Scout (Younger Sibling)</option>
@@ -250,7 +332,6 @@
       <option value="Other">Other</option>
     `;
 
-    // Dynamically insert a Kid Row
     function addKidRow() {
       kidCount++;
       const container = document.getElementById('kids-container');
@@ -283,36 +364,30 @@
       if (row) row.remove();
     }
 
-    // On Load: Render the first required kid row
     document.addEventListener('DOMContentLoaded', () => {
       addKidRow();
     });
 
-    // Form Handler: Collect data and upsert into Supabase `profile` table
+    /* -------------------------------------------------------------------------
+       FORM SUBMISSION WITH SECURE RPC CALL
+       ------------------------------------------------------------------------- */
     async function handleProfileSubmit(event) {
       event.preventDefault();
       clearAlert();
 
       const submitBtn = document.getElementById('submit-btn');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Saving Profile...';
+      submitBtn.textContent = 'Submitting Profile...';
 
       try {
         if (!supabaseClient) throw new Error('Supabase client failed to load.');
 
-        // Get currently authenticated user
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        if (userError || !user) {
-          throw new Error('User session not found. Please log in again.');
-        }
-
-        // Collect Form Inputs
         const parentName = document.getElementById('parent-name').value.trim();
         const phoneNumber = document.getElementById('phone-number').value.trim();
         const otherGuardianName = document.getElementById('other-guardian-name').value.trim();
         const otherGuardianPhone = document.getElementById('other-guardian-phone').value.trim();
+        const bypassKey = document.getElementById('bypass-key').value.trim();
 
-        // Collect Kids Array
         const kidNameInputs = document.querySelectorAll('.kid-name');
         const kidRankInputs = document.querySelectorAll('.kid-rank');
         const kids = [];
@@ -325,30 +400,32 @@
           }
         }
 
-        // Upsert Record into Supabase `profile` table
-        const { error: dbError } = await supabaseClient
-          .from('profile')
-          .upsert({
-            id: user.id,
-            parent_name: parentName,
-            phone_number: phoneNumber,
-            other_guardian_name: otherGuardianName || null,
-            other_guardian_phone: otherGuardianPhone || null,
-            kids: kids
-          });
+        // Invoke RPC function `submit_profile`
+        const { data, error } = await supabaseClient.rpc('submit_profile', {
+          p_parent_name: parentName,
+          p_phone_number: phoneNumber,
+          p_other_guardian_name: otherGuardianName || null,
+          p_other_guardian_phone: otherGuardianPhone || null,
+          p_kids: kids,
+          p_bypass_key: bypassKey || null
+        });
 
-        if (dbError) throw dbError;
+        if (error) throw error;
 
-        // Success -> Redirect to Home
-        showAlert('Profile saved successfully! Redirecting...', 'info');
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
+        // Check returned status
+        if (data && data.status === 'approved') {
+          showAlert('✔ Instant approval granted via key! Redirecting...', 'info');
+          setTimeout(() => { window.location.href = '/'; }, 1000);
+        } else {
+          // Display pending review screen
+          document.getElementById('form-container').style.display = 'none';
+          document.getElementById('review-screen').classList.add('active');
+        }
 
       } catch (err) {
-        showAlert(err.message || 'Error saving profile. Please try again.', 'error');
+        showAlert(err.message || 'Error submitting profile. Please try again.', 'error');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Complete Onboarding';
+        submitBtn.textContent = 'Submit Profile for Review';
       }
     }
 
