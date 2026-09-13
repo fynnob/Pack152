@@ -338,12 +338,11 @@
   <script>
     /* -------------------------------------------------------------------------
        1. INITIALIZE SUPABASE CLIENT
-       Replace the placeholders below with your Supabase Project URL & Anon Key.
+       Configured with your Pack 152 Project URL and Publishable Key
        ------------------------------------------------------------------------- */
-    const SUPABASE_URL = 'https://YOUR_SUPABASE_PROJECT.supabase.co';
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
     
-    // Initialize client safely
     const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     /* Global email state */
@@ -410,7 +409,7 @@
 
       try {
         if (!supabase) {
-          throw new Error('Supabase client is not configured. Please add your credentials.');
+          throw new Error('Supabase library failed to load.');
         }
 
         const { data, error } = await supabase.auth.signUp({
@@ -459,7 +458,7 @@
         const { data, error } = await supabase.auth.verifyOtp({
           email: userEmail,
           token: otpCode,
-          type: 'signup' // or 'email' depending on Supabase auth setup
+          type: 'signup'
         });
 
         if (error) throw error;
