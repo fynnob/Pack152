@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Approve Users — Pack 152 Leader Portal</title>
+
+  <!-- Supabase Client & Auth Guard -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/auth-guard.js"></script>
+
+  <style>
+    :root {
+      --color-primary: #16a34a;
+      --color-primary-hover: #15803d;
+      --color-danger: #ef4444;
+      --color-warning: #eab308;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-lg: 1rem;
+      --radius-md: 0.625rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background-color: #0f172a;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .navbar h1 { font-size: 1.35rem; font-weight: 800; color: #4ade80; }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .page-header { margin-bottom: 2rem; }
+    .page-header h2 { font-size: 1.85rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .page-header p { color: #94a3b8; font-size: 0.95rem; }
+
+    .user-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .user-row {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .user-info h3 { font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 0.25rem; }
+    .user-info p { font-size: 0.85rem; color: #cbd5e1; }
+
+    .kids-badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .badge {
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid #2563eb;
+      color: #93c5fd;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-md);
+    }
+
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .code-input {
+      width: 80px;
+      padding: 0.5rem;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 0.1em;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      color: #ffffff;
+      outline: none;
+    }
+
+    .btn-approve {
+      background-color: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-approve:hover:not(:disabled) { background-color: var(--color-primary-hover); }
+    .btn-approve:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      background: rgba(30, 41, 59, 0.4);
+      border-radius: var(--radius-lg);
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <h1>Pack 152 — Pending Approvals</h1>
+    <a href="/Leader/" class="btn-back">← Back to Dashboard</a>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <h2>Approve New Members</h2>
+      <p>Enter the member's 4-digit verification code shown on their onboarding screen to approve them.</p>
+    </div>
+
+    <div id="user-list" class="user-list">
+      <div class="empty-state">Loading pending registrations...</div>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    var supabaseClient = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        loadPendingUsers();
+      }
+    });
+
+    async function loadPendingUsers() {
+      const listContainer = document.getElementById('user-list');
+
+      try {
+        const { data: users, error } = await supabaseClient
+          .from('profile')
+          .select('*')
+          .eq('status', 'under_review')
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        if (!users || users.length === 0) {
+          listContainer.innerHTML = '<div class="empty-state">🎉 No pending user registrations right now.</div>';
+          return;
+        }
+
+        listContainer.innerHTML = users.map(u => `
+          <div class="user-row" id="row-${u.id}">
+            <div class="user-info">
+              <h3>${escapeHtml(u.parent_name)}</h3>
+              <p>📞 Phone: ${escapeHtml(u.phone_number)}</p>
+              ${u.other_guardian_name ? `<p>👤 Sec. Guardian: ${escapeHtml(u.other_guardian_name)} (${escapeHtml(u.other_guardian_phone || 'N/A')})</p>` : ''}
+              <div class="kids-badges">
+                ${(u.kids || []).map(k => `<span class="badge">🧒 ${escapeHtml(k.name)} (${escapeHtml(k.rank)})</span>`).join('')}
+              </div>
+            </div>
+
+            <div class="action-group">
+              <input type="text" id="code-${u.id}" class="code-input" placeholder="0000" maxlength="4" />
+              <button class="btn-approve" onclick="approveUser('${u.id}')">Approve</button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        listContainer.innerHTML = `<div class="empty-state" style="color:#fca5a5;">Error loading profiles: ${err.message}</div>`;
+      }
+    }
+
+    async function approveUser(userId) {
+      const codeInput = document.getElementById(`code-${userId}`);
+      const code = codeInput.value.trim();
+
+      if (code.length !== 4) {
+        alert('Please enter the 4-digit verification code.');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseClient.rpc('approve_user', {
+          p_target_user_id: userId,
+          p_code: code
+        });
+
+        if (error) throw error;
+
+        // Remove row on success
+        const row = document.getElementById(`row-${userId}`);
+        if (row) row.remove();
+
+        if (document.querySelectorAll('.user-row').length === 0) {
+          document.getElementById('user-list').innerHTML = '<div class="empty-state">🎉 All pending registrations approved!</div>';
+        }
+
+      } catch (err) {
+        alert(err.message || 'Failed to approve user.');
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+  </script>
+</body>
+</html>

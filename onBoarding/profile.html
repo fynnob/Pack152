@@ -132,7 +132,7 @@
       margin-bottom: 1.5rem;
     }
 
-    /* Submit Button (Error States) */
+    /* Submit Button */
     .btn-submit {
       width: 100%;
       padding: 0.85rem 1.5rem;
@@ -148,7 +148,6 @@
     .btn-submit:hover:not(:disabled) { background-color: var(--color-primary-hover); transform: translateY(-1px); }
     .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
 
-    /* Button Danger State for Errors */
     .btn-submit.btn-error {
       background-color: var(--color-danger) !important;
       color: #ffffff !important;
@@ -211,7 +210,7 @@
             <div class="form-hint">Provided by Leaders for instant Parent approval. Leave blank for manual review.</div>
           </div>
 
-          <!-- GDPR / DSGVO CONSENT (German Pack Compliance) -->
+          <!-- GDPR / DSGVO CONSENT -->
           <div class="gdpr-group">
             <input type="checkbox" id="gdpr-consent" required />
             <label for="gdpr-consent">
@@ -227,9 +226,17 @@
       <div id="locked-screen" class="locked-screen">
         <div id="locked-icon" class="locked-icon">⏳</div>
         <h2 id="locked-title" style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem;">Profile Under Review</h2>
-        <p id="locked-desc" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+        <p id="locked-desc" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem;">
           Your profile is currently under review by Pack Leaders. You cannot edit your details at this time.
         </p>
+
+        <!-- 4-Digit Verification Code Display -->
+        <div id="code-box" style="display:none; background: rgba(15, 23, 42, 0.6); border: 1px dashed #4ade80; border-radius: 0.625rem; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-bottom: 0.35rem;">In-Person Verification Code</div>
+          <div id="verify-code-display" style="font-family: monospace; font-size: 2rem; font-weight: 800; color: #4ade80; letter-spacing: 0.25em;">0000</div>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.35rem;">Show this 4-digit code to a Leader or Cub Master to confirm your identity.</div>
+        </div>
+
         <button class="btn-submit" onclick="window.location.href='/'">Return to Home</button>
       </div>
 
@@ -268,14 +275,14 @@
     let kidCount = 0;
     const RANK_OPTIONS = `
       <option value="" disabled selected>Select Rank / Status...</option>
-      <option value="Pre-Cub Scout">🧸 Pre-Cub Scout (Younger Sibling)</option>
-      <option value="Lion">🦁 Lion (Kindergarten)</option>
-      <option value="Tiger">🐯 Tiger (1st Grade)</option>
-      <option value="Wolf">🐺 Wolf (2nd Grade)</option>
-      <option value="Bear">🐻 Bear (3rd Grade)</option>
-      <option value="Webelos">🏕️ Webelos (4th Grade)</option>
-      <option value="Arrow of Light">🛡️ Arrow of Light (5th Grade)</option>
-      <option value="Scouts BSA">⚜️ Scouts BSA (Older Sibling)</option>
+      <option value="Pre-Cub Scout">Pre-Cub Scout (Younger Sibling)</option>
+      <option value="Lion">Lion (Kindergarten)</option>
+      <option value="Tiger">Tiger (1st Grade)</option>
+      <option value="Wolf">Wolf (2nd Grade)</option>
+      <option value="Bear">Bear (3rd Grade)</option>
+      <option value="Webelos">Webelos (4th Grade)</option>
+      <option value="Arrow of Light">Arrow of Light (5th Grade)</option>
+      <option value="Scouts BSA">Scouts BSA (Older Sibling)</option>
       <option value="Other">Other</option>
     `;
 
@@ -307,12 +314,21 @@
       if (row) row.remove();
     }
 
+    /* 4-Digit Verification Code Generator */
+    function generate4DigitCode(uuid) {
+      let hash = 0;
+      for (let i = 0; i < uuid.length; i++) {
+        hash = ((hash << 5) - hash) + uuid.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash % 10000).toString().padStart(4, '0');
+    }
+
     /* Lock Screen & Existing Profile Check */
     document.addEventListener('DOMContentLoaded', async () => {
       addKidRow();
       attachInputChangeListeners();
 
-      // Check user session & status on load
       if (supabaseClient) {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) {
@@ -323,21 +339,29 @@
         const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
         if (profile) {
           if (profile.status === 'under_review') {
-            showLockedScreen('⏳', 'Profile Under Review', 'Your profile is currently under review by Pack Leaders. You cannot edit your details at this time.');
+            showLockedScreen('⏳', 'Profile Under Review', 'Your profile is currently under review by Pack Leaders. You cannot edit your details at this time.', user.id);
           } else if (profile.status === 'rejected') {
-            showLockedScreen('❌', 'Application Rejected', 'Your profile application was not approved. Please contact your Cub Master for assistance.');
+            showLockedScreen('❌', 'Application Rejected', 'Your profile application was not approved. Please contact your Cub Master for assistance.', null);
           } else if (profile.status === 'approved') {
-            window.location.href = '/'; // Approved -> Send to Home Router
+            window.location.href = '/';
           }
         }
       }
     });
 
-    function showLockedScreen(icon, title, desc) {
+    function showLockedScreen(icon, title, desc, userId) {
       document.getElementById('form-container').style.display = 'none';
       document.getElementById('locked-icon').textContent = icon;
       document.getElementById('locked-title').textContent = title;
       document.getElementById('locked-desc').textContent = desc;
+
+      if (userId) {
+        const codeBox = document.getElementById('code-box');
+        const codeDisplay = document.getElementById('verify-code-display');
+        codeDisplay.textContent = generate4DigitCode(userId);
+        codeBox.style.display = 'block';
+      }
+
       document.getElementById('locked-screen').classList.add('active');
     }
 
@@ -376,6 +400,9 @@
       try {
         if (!supabaseClient) throw new Error('Supabase client failed to load.');
 
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error('User session not found.');
+
         const parentName = document.getElementById('parent-name').value.trim();
         const phoneNumber = document.getElementById('phone-number').value.trim();
         const otherGuardianName = document.getElementById('other-guardian-name').value.trim();
@@ -408,7 +435,7 @@
         if (data && data.status === 'approved') {
           window.location.href = '/';
         } else {
-          showLockedScreen('⏳', 'Profile Under Review', 'Thank you! Your profile has been submitted for Leader review.');
+          showLockedScreen('⏳', 'Profile Under Review', 'Thank you! Your profile has been submitted for Leader review.', user.id);
         }
 
       } catch (err) {

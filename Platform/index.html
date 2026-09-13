@@ -52,6 +52,11 @@
       text-decoration: none;
     }
 
+    /* Hidden by default until role verification succeeds */
+    #btn-switch-view {
+      display: none;
+    }
+
     .container {
       max-width: 1080px;
       margin: 3rem auto;
@@ -97,7 +102,7 @@
   <header class="navbar">
     <h1>Pack 152 — Family Platform</h1>
     <div class="nav-actions">
-      <a href="/select" class="btn-nav">Switch View</a>
+      <a href="/select" id="btn-switch-view" class="btn-nav">Switch View</a>
       <button class="btn-nav" onclick="signOut()">Log Out</button>
     </div>
   </header>
@@ -133,11 +138,35 @@
   </main>
 
   <script>
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!window.supabase) return;
+
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: { session } } = await client.auth.getSession();
+
+      if (session && session.user) {
+        const { data: profile } = await client
+          .from('profile')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        // Reveal the "Switch View" button ONLY for Leaders and Cub Masters
+        if (profile && (profile.role === 'leader' || profile.role === 'cub_master')) {
+          const switchBtn = document.getElementById('btn-switch-view');
+          if (switchBtn) {
+            switchBtn.style.display = 'inline-flex';
+          }
+        }
+      }
+    });
+
     async function signOut() {
-      const client = window.supabase.createClient(
-        'https://ygoxjtgoyoxjcvtypoii.supabase.co',
-        'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia'
-      );
+      if (!window.supabase) return;
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       await client.auth.signOut();
       window.location.href = '/';
     }
