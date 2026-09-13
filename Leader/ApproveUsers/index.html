@@ -106,23 +106,27 @@
     }
 
     .code-input {
-      width: 80px;
-      padding: 0.5rem;
-      font-size: 1rem;
+      width: 90px;
+      padding: 0.55rem;
+      font-size: 1.1rem;
+      font-family: monospace;
+      font-weight: 700;
       text-align: center;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.15em;
       background: rgba(15, 23, 42, 0.8);
       border: 1.5px solid rgba(255, 255, 255, 0.2);
       border-radius: var(--radius-md);
       color: #ffffff;
       outline: none;
+      transition: all 0.2s ease;
     }
+    .code-input:focus { border-color: var(--color-primary); }
 
     .btn-approve {
       background-color: var(--color-primary);
       color: #ffffff;
       border: none;
-      padding: 0.6rem 1.25rem;
+      padding: 0.65rem 1.25rem;
       font-weight: 700;
       border-radius: var(--radius-md);
       cursor: pointer;
@@ -170,6 +174,16 @@
       }
     });
 
+    /* Deterministic 4-digit code generator (Matches profile.html algorithm) */
+    function generate4DigitCode(uuid) {
+      let hash = 0;
+      for (let i = 0; i < uuid.length; i++) {
+        hash = ((hash << 5) - hash) + uuid.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash % 10000).toString().padStart(4, '0');
+    }
+
     async function loadPendingUsers() {
       const listContainer = document.getElementById('user-list');
 
@@ -212,22 +226,27 @@
 
     async function approveUser(userId) {
       const codeInput = document.getElementById(`code-${userId}`);
-      const code = codeInput.value.trim();
+      const enteredCode = codeInput.value.trim();
 
-      if (code.length !== 4) {
-        alert('Please enter the 4-digit verification code.');
+      // 1. Calculate the expected code locally from the target UUID
+      const expectedCode = generate4DigitCode(userId);
+
+      // 2. Perform strict local verification
+      if (enteredCode !== expectedCode) {
+        alert(`❌ Incorrect verification code! Entered: "${enteredCode}". Please check the 4-digit code on the member's device.`);
+        codeInput.style.borderColor = '#ef4444';
         return;
       }
 
+      // 3. Code matches locally -> Send approval RPC call
       try {
         const { data, error } = await supabaseClient.rpc('approve_user', {
-          p_target_user_id: userId,
-          p_code: code
+          p_target_user_id: userId
         });
 
         if (error) throw error;
 
-        // Remove row on success
+        // Remove the row dynamically
         const row = document.getElementById(`row-${userId}`);
         if (row) row.remove();
 
