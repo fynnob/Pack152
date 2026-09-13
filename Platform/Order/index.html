@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pack Gear & Orders — Pack 152</title>
 
+  <!-- Supabase Client & Auth Guard -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/auth-guard.js"></script>
 
@@ -14,6 +15,7 @@
       --color-primary-hover: #15803d;
       --color-secondary: #2563eb;
       --color-danger: #ef4444;
+      --color-danger-hover: #dc2626;
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --radius-lg: 1rem;
       --radius-md: 0.625rem;
@@ -44,6 +46,26 @@
 
     .navbar h1 { font-size: 1.35rem; font-weight: 800; color: #60a5fa; }
 
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* Ordering Window Deadline Badge */
+    .deadline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid #eab308;
+      color: #fde047;
+      padding: 0.45rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 700;
+    }
+
     .btn-nav {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -66,12 +88,13 @@
 
     @media (max-width: 868px) {
       .container { grid-template-columns: 1fr; }
+      .nav-actions { flex-direction: column; align-items: flex-end; gap: 0.5rem; }
     }
 
-    /* Existing Order Banner */
+    /* Active Order Banner */
     .order-summary-banner {
       grid-column: 1 / -1;
-      background: rgba(37, 99, 235, 0.2);
+      background: rgba(30, 41, 59, 0.8);
       border: 1px solid var(--color-secondary);
       border-radius: var(--radius-lg);
       padding: 1.25rem 1.5rem;
@@ -81,6 +104,33 @@
       flex-wrap: wrap;
       gap: 1rem;
     }
+
+    .banner-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-edit {
+      background: var(--color-secondary);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-delete {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--color-danger);
+      color: #fca5a5;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-delete:hover { background: var(--color-danger); color: #fff; }
 
     /* Den Collapsible Sections */
     .den-group {
@@ -149,7 +199,7 @@
 
     .item-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
     .item-desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.3; }
-    .item-price { font-size: 1.1rem; font-weight: 800; color: #4ade80; margin-bottom: 0.75rem; }
+    .item-price { font-size: 1rem; font-weight: 800; color: #4ade80; margin-bottom: 0.75rem; }
 
     .btn-add {
       background: var(--color-secondary);
@@ -160,7 +210,9 @@
       font-weight: 700;
       cursor: pointer;
       width: 100%;
+      transition: opacity 0.2s ease;
     }
+    .btn-add:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Cart Sidebar */
     .cart-card {
@@ -180,7 +232,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.75rem;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
     }
 
     .qty-controls {
@@ -201,13 +253,15 @@
     }
 
     .cart-total {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 800;
       margin-top: 1.25rem;
       padding-top: 0.75rem;
       border-top: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
       justify-content: space-between;
+      flex-direction: column;
+      gap: 0.25rem;
     }
 
     .btn-order {
@@ -221,15 +275,85 @@
       font-weight: 700;
       margin-top: 1rem;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     .btn-order:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Custom Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 300;
+    }
+
+    .toast {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      animation: slideIn 0.25s ease;
+    }
+    .toast.success { border-color: var(--color-primary); }
+    .toast.error { border-color: var(--color-danger); }
+
+    /* Custom Confirmation Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 400;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      max-width: 420px;
+      width: 100%;
+      padding: 1.75rem;
+      text-align: center;
+    }
+    .modal-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .modal-body { color: #cbd5e1; font-size: 0.9rem; line-height: 1.4; margin-bottom: 1.5rem; }
+    .modal-actions { display: flex; gap: 0.75rem; }
+    .modal-btn {
+      flex: 1;
+      padding: 0.65rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
 
   <header class="navbar">
     <h1>Pack 152 — Gear & Orders</h1>
-    <a href="/Platform/" class="btn-nav">← Back to Hub</a>
+    <div class="nav-actions">
+      <div class="deadline-badge">
+        <span>⏰ Order Window Closes:</span>
+        <strong id="closing-date">Oct 15, 2026</strong>
+      </div>
+      <a href="/Platform/" class="btn-nav">← Back to Hub</a>
+    </div>
   </header>
 
   <main class="container">
@@ -239,12 +363,15 @@
         <h3 style="font-size: 1.1rem; font-weight: 800; color: #60a5fa;">Active Order Placed</h3>
         <p id="order-banner-details" style="font-size: 0.875rem; color: #cbd5e1; margin-top: 0.25rem;"></p>
       </div>
-      <button class="btn-nav" style="background: var(--color-secondary);" onclick="enableEditOrder()">✏️ Change Order</button>
+      <div class="banner-actions">
+        <button class="btn-edit" onclick="enableEditOrder()">✏️ Change Order</button>
+        <button class="btn-delete" onclick="confirmDeleteOrder()">🗑️ Delete Order</button>
+      </div>
     </div>
 
     <!-- Catalog Sections -->
     <div id="catalog-container">
-      <div style="color: #94a3b8;">Loading items catalog...</div>
+      <div style="color: #94a3b8;">Loading catalog & live exchange rates...</div>
     </div>
 
     <!-- Shopping Cart Panel -->
@@ -254,12 +381,33 @@
         <p style="font-size: 0.875rem; color: #94a3b8;">Your cart is empty.</p>
       </div>
       <div class="cart-total">
-        <span>Total Amount:</span>
-        <span id="cart-total-price" style="color: #4ade80;">$0.00</span>
+        <div style="display:flex; justify-content:space-between;">
+          <span>Total USD:</span>
+          <span id="cart-total-usd" style="color: #4ade80;">$0.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size: 0.875rem; color: #94a3b8;">
+          <span>Total EUR (Est.):</span>
+          <span id="cart-total-eur">€0.00</span>
+        </div>
       </div>
       <button id="place-order-btn" class="btn-order" onclick="submitOrder()" disabled>Place Order</button>
     </div>
   </main>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="custom-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div id="modal-title" class="modal-title">Confirm Action</div>
+      <div id="modal-body" class="modal-body">Are you sure?</div>
+      <div class="modal-actions">
+        <button id="modal-cancel-btn" class="modal-btn" style="background: rgba(255,255,255,0.1); color: #fff;">Cancel</button>
+        <button id="modal-confirm-btn" class="modal-btn" style="background: var(--color-danger); color: #fff;">Delete Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
 
   <script>
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
@@ -268,35 +416,70 @@
 
     let userProfile = null;
     let existingOrder = null;
+    let isEditingMode = false;
     let cart = {}; // item_id -> { id, name, price, quantity }
     let kidsDens = [];
+    let eurExchangeRate = 0.86; // Fallback rate
+
+    const THIRTY_SIX_HOURS_MS = 36 * 60 * 60 * 1000;
 
     document.addEventListener('DOMContentLoaded', async () => {
       if (window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await initExchangeRate();
         await initOrdering();
       }
     });
 
+    /* 1. Currency Exchange Rate with 36-Hour LocalStorage Cache */
+    async function initExchangeRate() {
+      const cachedRate = localStorage.getItem('pack152_eur_rate');
+      const cachedExpiry = localStorage.getItem('pack152_eur_rate_expiry');
+      const now = Date.now();
+
+      if (cachedRate && cachedExpiry && now < Number(cachedExpiry)) {
+        eurExchangeRate = parseFloat(cachedRate);
+        return;
+      }
+
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        if (data && data.rates && data.rates.EUR) {
+          eurExchangeRate = Number(data.rates.EUR);
+          localStorage.setItem('pack152_eur_rate', eurExchangeRate.toString());
+          localStorage.setItem('pack152_eur_rate_expiry', (now + THIRTY_SIX_HOURS_MS).toString());
+        }
+      } catch (err) {
+        console.warn('Exchange rate fetch failed, using fallback:', err);
+      }
+    }
+
+    function formatPriceDisplay(usdAmount) {
+      const usd = Number(usdAmount);
+      const eur = Math.round(usd * eurExchangeRate * 100) / 100;
+      return `$${usd.toFixed(2)} (€${eur.toFixed(2)})`;
+    }
+
+    /* 2. Page Setup & Existing Order Checks */
     async function initOrdering() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) return;
 
-      // 1. Fetch User Profile to get Kid Dens
+      // Fetch User Profile
       const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
       userProfile = profile;
       if (profile && profile.kids) {
         kidsDens = profile.kids.map(k => (k.rank || '').trim().toLowerCase());
       }
 
-      // 2. Fetch Existing Active Order
+      // Fetch Active Placed Order
       const { data: orders } = await supabaseClient.from('orders').select('*').eq('user_id', user.id).eq('status', 'placed');
       if (orders && orders.length > 0) {
         existingOrder = orders[0];
         showOrderBanner(existingOrder);
       }
 
-      // 3. Load Catalog Items
       await loadCatalog();
     }
 
@@ -304,21 +487,61 @@
       const banner = document.getElementById('order-banner');
       const details = document.getElementById('order-banner-details');
       const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0);
-      details.textContent = `Total Items: ${totalItems} | Total: $${Number(order.total_amount).toFixed(2)} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
+      details.textContent = `Total Items: ${totalItems} | Total: ${formatPriceDisplay(order.total_amount)} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
       banner.style.display = 'flex';
+      updateCatalogButtonState();
+    }
+
+    function updateCatalogButtonState() {
+      // Disable catalog add buttons if active order exists and NOT in edit mode
+      const addBtns = document.querySelectorAll('.btn-add');
+      addBtns.forEach(btn => {
+        btn.disabled = !!(existingOrder && !isEditingMode);
+      });
+
+      const orderBtn = document.getElementById('place-order-btn');
+      if (existingOrder && !isEditingMode) {
+        orderBtn.disabled = true;
+        orderBtn.textContent = 'Order Already Placed';
+      }
     }
 
     function enableEditOrder() {
       if (!existingOrder) return;
+      isEditingMode = true;
       cart = {};
       existingOrder.items.forEach(i => {
         cart[i.id] = { ...i };
       });
       renderCart();
-      document.getElementById('place-order-btn').textContent = 'Update Existing Order';
-      alert('Your existing order has been loaded into the cart. Make changes and click Update Existing Order.');
+      updateCatalogButtonState();
+
+      const orderBtn = document.getElementById('place-order-btn');
+      orderBtn.disabled = false;
+      orderBtn.textContent = 'Update Existing Order';
+
+      showToast('Existing order loaded into cart. Make changes and click Update.', 'success');
     }
 
+    function confirmDeleteOrder() {
+      if (!existingOrder) return;
+      showConfirmModal(
+        'Delete Order?',
+        'Are you sure you want to delete your active order? This cannot be undone.',
+        async () => {
+          try {
+            const { error } = await supabaseClient.from('orders').update({ status: 'cancelled' }).eq('id', existingOrder.id);
+            if (error) throw error;
+            showToast('Order deleted successfully.', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+          } catch (err) {
+            showToast(err.message || 'Failed to delete order.', 'error');
+          }
+        }
+      );
+    }
+
+    /* 3. Catalog & Cart Operations */
     async function loadCatalog() {
       const container = document.getElementById('catalog-container');
       const { data: items, error } = await supabaseClient.from('items').select('*').order('name');
@@ -328,7 +551,6 @@
         return;
       }
 
-      // Group Items by target_den
       const groups = {};
       items.forEach(item => {
         const den = item.target_den || 'General';
@@ -336,7 +558,6 @@
         groups[den].push(item);
       });
 
-      // Sort Den groups: Kids' dens first
       const denNames = Object.keys(groups).sort((a, b) => {
         const aIsKid = kidsDens.includes(a.toLowerCase());
         const bIsKid = kidsDens.includes(b.toLowerCase());
@@ -362,7 +583,7 @@
                     <div class="item-desc">${escapeHtml(item.description || '')}</div>
                   </div>
                   <div>
-                    <div class="item-price">$${Number(item.price).toFixed(2)}</div>
+                    <div class="item-price">${formatPriceDisplay(item.price)}</div>
                     <button class="btn-add" onclick="addToCart('${item.id}', '${escapeHtml(item.name)}', ${item.price})">+ Add to Cart</button>
                   </div>
                 </div>
@@ -371,9 +592,16 @@
           </details>
         `;
       }).join('');
+
+      updateCatalogButtonState();
     }
 
     function addToCart(id, name, price) {
+      if (existingOrder && !isEditingMode) {
+        showToast('You already have an active order. Click "Change Order" to edit.', 'error');
+        return;
+      }
+
       if (!cart[id]) {
         cart[id] = { id, name, price: Number(price), quantity: 0 };
       }
@@ -393,26 +621,28 @@
 
     function renderCart() {
       const container = document.getElementById('cart-items');
-      const totalPriceEl = document.getElementById('cart-total-price');
+      const totalUsdEl = document.getElementById('cart-total-usd');
+      const totalEurEl = document.getElementById('cart-total-eur');
       const btn = document.getElementById('place-order-btn');
 
       const itemsList = Object.values(cart);
       if (itemsList.length === 0) {
         container.innerHTML = '<p style="font-size: 0.875rem; color: #94a3b8;">Your cart is empty.</p>';
-        totalPriceEl.textContent = '$0.00';
+        totalUsdEl.textContent = '$0.00';
+        totalEurEl.textContent = '€0.00';
         btn.disabled = true;
         return;
       }
 
-      let total = 0;
+      let totalUsd = 0;
       container.innerHTML = itemsList.map(item => {
         const subtotal = item.price * item.quantity;
-        total += subtotal;
+        totalUsd += subtotal;
         return `
           <div class="cart-item">
             <div>
               <div style="font-weight:700;">${escapeHtml(item.name)}</div>
-              <div style="font-size:0.75rem; color:#94a3b8;">$${item.price.toFixed(2)} each</div>
+              <div style="font-size:0.75rem; color:#94a3b8;">${formatPriceDisplay(item.price)} each</div>
             </div>
             <div class="qty-controls">
               <button class="btn-qty" onclick="updateQty('${item.id}', -1)">-</button>
@@ -423,31 +653,31 @@
         `;
       }).join('');
 
-      totalPriceEl.textContent = `$${total.toFixed(2)}`;
+      const totalEur = Math.round(totalUsd * eurExchangeRate * 100) / 100;
+      totalUsdEl.textContent = `$${totalUsd.toFixed(2)}`;
+      totalEurEl.textContent = `€${totalEur.toFixed(2)}`;
       btn.disabled = false;
     }
 
     async function submitOrder() {
       const btn = document.getElementById('place-order-btn');
       btn.disabled = true;
-      btn.textContent = 'Submitting Order...';
+      btn.textContent = 'Submitting...';
 
       try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         const itemsList = Object.values(cart);
         const totalAmount = itemsList.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
-        if (existingOrder) {
-          // Update existing order
+        if (existingOrder && isEditingMode) {
           const { error } = await supabaseClient.from('orders').update({
             items: itemsList,
             total_amount: totalAmount,
             updated_at: new Date().toISOString()
           }).eq('id', existingOrder.id);
           if (error) throw error;
-          alert('Order updated successfully!');
+          showToast('Order updated successfully!', 'success');
         } else {
-          // Create new order
           const { error } = await supabaseClient.from('orders').insert({
             user_id: user.id,
             parent_name: userProfile ? userProfile.parent_name : 'Parent',
@@ -456,15 +686,41 @@
             status: 'placed'
           });
           if (error) throw error;
-          alert('Order placed successfully!');
+          showToast('Order placed successfully!', 'success');
         }
 
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 1200);
       } catch (err) {
-        alert(err.message || 'Failed to submit order.');
+        showToast(err.message || 'Failed to submit order.', 'error');
         btn.disabled = false;
-        btn.textContent = existingOrder ? 'Update Existing Order' : 'Place Order';
+        btn.textContent = isEditingMode ? 'Update Existing Order' : 'Place Order';
       }
+    }
+
+    /* 4. Custom UI Modals & Toasts (No Native Browser Alerts) */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function showConfirmModal(title, body, onConfirm) {
+      const overlay = document.getElementById('custom-modal');
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').textContent = body;
+
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+      const cancelBtn = document.getElementById('modal-cancel-btn');
+
+      overlay.style.display = 'flex';
+
+      const cleanup = () => { overlay.style.display = 'none'; };
+
+      confirmBtn.onclick = () => { cleanup(); onConfirm(); };
+      cancelBtn.onclick = cleanup;
     }
 
     function escapeHtml(str) {
