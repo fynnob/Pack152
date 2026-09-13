@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Management — Pack 152 Leader Portal</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/auth-guard.js"></script>
+
+  <style>
+    :root {
+      --color-primary: #16a34a;
+      --color-primary-hover: #15803d;
+      --color-secondary: #2563eb;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-lg: 1rem;
+      --radius-md: 0.625rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background-color: #0f172a;
+      padding-bottom: 4rem;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid rgba(22, 163, 74, 0.3);
+    }
+
+    .navbar h1 { font-size: 1.35rem; font-weight: 800; color: #4ade80; }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-action {
+      background: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.65rem 1.25rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+
+    .btn-export {
+      background: var(--color-secondary);
+      color: #ffffff;
+      border: none;
+      padding: 0.65rem 1.25rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 0.6rem 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: var(--radius-md);
+    }
+
+    .tab-btn.active {
+      background: rgba(30, 41, 59, 0.8);
+      color: #4ade80;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Tables & Cards */
+    .data-card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    th { color: #94a3b8; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
+
+    /* Form Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-lg);
+      max-width: 480px;
+      width: 100%;
+      padding: 2rem;
+    }
+
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem; }
+    .form-control {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      color: #fff;
+      outline: none;
+    }
+    select.form-control option { background: #0f172a; }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <h1>Pack 152 — Order Management</h1>
+    <a href="/Leader/" class="btn-back">← Back to Dashboard</a>
+  </header>
+
+  <main class="container">
+    <div class="header-bar">
+      <div>
+        <h2 style="font-size: 1.85rem; font-weight: 800;">Order Manager</h2>
+        <p style="color: #94a3b8; font-size: 0.95rem;">Review parent orders, total item counts, and manage catalog items.</p>
+      </div>
+
+      <div style="display:flex; gap:0.75rem;">
+        <button class="btn-export" onclick="exportToCSV()">📥 Export to CSV / Excel</button>
+        <button class="btn-action" onclick="openAddModal()">+ Add New Catalog Item</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-bar">
+      <button id="tab-btn-orders" class="tab-btn active" onclick="switchTab('orders')">📋 Total Orders & Summary</button>
+      <button id="tab-btn-catalog" class="tab-btn" onclick="switchTab('catalog')">📦 Manage Items Catalog</button>
+    </div>
+
+    <!-- TAB 1: ORDERS & SUMMARY -->
+    <div id="tab-orders" class="tab-content active">
+      <!-- Aggregated Totals -->
+      <div class="data-card">
+        <h3 style="font-size:1.1rem; font-weight:800; color:#4ade80; margin-bottom:1rem;">Total Item Order Quantities</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Total Quantity Ordered</th>
+              <th>Unit Price</th>
+              <th>Gross Revenue</th>
+            </tr>
+          </thead>
+          <tbody id="aggregated-summary">
+            <tr><td colspan="4" style="color:#94a3b8;">Loading order data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Individual Orders List -->
+      <div class="data-card">
+        <h3 style="font-size:1.1rem; font-weight:800; color:#60a5fa; margin-bottom:1rem;">All Submitted Orders</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Parent Name</th>
+              <th>Items Ordered</th>
+              <th>Total Amount</th>
+              <th>Date Placed</th>
+            </tr>
+          </thead>
+          <tbody id="orders-list">
+            <tr><td colspan="4" style="color:#94a3b8;">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: CATALOG ITEMS MANAGEMENT -->
+    <div id="tab-catalog" class="tab-content">
+      <div class="data-card">
+        <h3 style="font-size:1.1rem; font-weight:800; color:#4ade80; margin-bottom:1rem;">Active Catalog Items</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Target Den / Group</th>
+              <th>Price</th>
+              <th>Description</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="catalog-list">
+            <tr><td colspan="5" style="color:#94a3b8;">Loading catalog items...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ADD ITEM MODAL -->
+  <div id="item-modal" class="modal">
+    <div class="modal-card">
+      <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1.25rem;">Add Catalog Item</h3>
+      <form onsubmit="handleAddItem(event)">
+        <div class="form-group">
+          <label class="form-label">Item Name</label>
+          <input type="text" id="item-name" class="form-control" placeholder="e.g. Bear Handbook" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Den / Group</label>
+          <select id="item-den" class="form-control" required>
+            <option value="General">General / All Dens</option>
+            <option value="Lion">Lion (Kindergarten)</option>
+            <option value="Tiger">Tiger (1st Grade)</option>
+            <option value="Wolf">Wolf (2nd Grade)</option>
+            <option value="Bear">Bear (3rd Grade)</option>
+            <option value="Webelos">Webelos (4th Grade)</option>
+            <option value="Arrow of Light">Arrow of Light (5th Grade)</option>
+            <option value="Pre-Cub Scout">Pre-Cub Scout</option>
+            <option value="Scouts BSA">Scouts BSA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price ($)</label>
+          <input type="number" step="0.01" id="item-price" class="form-control" placeholder="15.00" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image URL (Optional)</label>
+          <input type="url" id="item-image" class="form-control" placeholder="https://..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" id="item-desc" class="form-control" placeholder="Short description..." />
+        </div>
+
+        <div style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+          <button type="submit" class="btn-action" style="flex:1;">Save Item</button>
+          <button type="button" class="btn-back" onclick="closeAddModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    var supabaseClient = null;
+
+    let rawOrders = [];
+    let rawItems = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await loadAllData();
+      }
+    });
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      document.getElementById(`tab-btn-${tab}`).classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    async function loadAllData() {
+      // 1. Fetch Orders
+      const { data: orders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+      rawOrders = orders || [];
+      renderOrdersAndSummary();
+
+      // 2. Fetch Catalog Items
+      const { data: items } = await supabaseClient.from('items').select('*').order('target_den');
+      rawItems = items || [];
+      renderCatalog();
+    }
+
+    function renderOrdersAndSummary() {
+      const summaryBody = document.getElementById('aggregated-summary');
+      const ordersBody = document.getElementById('orders-list');
+
+      if (rawOrders.length === 0) {
+        summaryBody.innerHTML = '<tr><td colspan="4" style="color:#94a3b8;">No orders placed yet.</td></tr>';
+        ordersBody.innerHTML = '<tr><td colspan="4" style="color:#94a3b8;">No orders placed yet.</td></tr>';
+        return;
+      }
+
+      // Aggregate Quantities by Item Name
+      const itemTotals = {};
+      rawOrders.forEach(o => {
+        (o.items || []).forEach(i => {
+          if (!itemTotals[i.name]) {
+            itemTotals[i.name] = { quantity: 0, price: i.price };
+          }
+          itemTotals[i.name].quantity += i.quantity;
+        });
+      });
+
+      summaryBody.innerHTML = Object.entries(itemTotals).map(([name, stat]) => `
+        <tr>
+          <td style="font-weight:700;">${escapeHtml(name)}</td>
+          <td style="font-weight:700; color:#4ade80;">${stat.quantity}</td>
+          <td>$${stat.price.toFixed(2)}</td>
+          <td>$${(stat.quantity * stat.price).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      ordersBody.innerHTML = rawOrders.map(o => `
+        <tr>
+          <td style="font-weight:700;">${escapeHtml(o.parent_name)}</td>
+          <td>${(o.items || []).map(i => `${escapeHtml(i.name)} (x${i.quantity})`).join(', ')}</td>
+          <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)}</td>
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCatalog() {
+      const body = document.getElementById('catalog-list');
+      if (rawItems.length === 0) {
+        body.innerHTML = '<tr><td colspan="5" style="color:#94a3b8;">No catalog items added yet.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rawItems.map(i => `
+        <tr>
+          <td style="font-weight:700;">${escapeHtml(i.name)}</td>
+          <td><span style="background:rgba(37,99,235,0.2); border:1px solid #2563eb; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem;">${escapeHtml(i.target_den)}</span></td>
+          <td style="font-weight:700; color:#4ade80;">$${Number(i.price).toFixed(2)}</td>
+          <td style="color:#94a3b8;">${escapeHtml(i.description || 'N/A')}</td>
+          <td><button style="background:transparent; border:none; color:#ef4444; font-weight:700; cursor:pointer;" onclick="deleteItem('${i.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    /* Add Item Modal */
+    function openAddModal() { document.getElementById('item-modal').style.display = 'flex'; }
+    function closeAddModal() { document.getElementById('item-modal').style.display = 'none'; }
+
+    async function handleAddItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('item-name').value.trim();
+      const target_den = document.getElementById('item-den').value;
+      const price = parseFloat(document.getElementById('item-price').value);
+      const image_url = document.getElementById('item-image').value.trim();
+      const description = document.getElementById('item-desc').value.trim();
+
+      const { error } = await supabaseClient.from('items').insert({
+        name, target_den, price, image_url: image_url || null, description: description || null
+      });
+
+      if (error) { alert(error.message); return; }
+
+      closeAddModal();
+      await loadAllData();
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Are you sure you want to remove this item?')) return;
+      const { error } = await supabaseClient.from('items').delete().eq('id', id);
+      if (error) { alert(error.message); return; }
+      await loadAllData();
+    }
+
+    /* Export CSV for Excel & Google Sheets */
+    function exportToCSV() {
+      if (rawOrders.length === 0) { alert('No orders to export.'); return; }
+
+      let csv = '\uFEFFParent Name,Items Breakdown,Total Amount,Status,Date Placed\n';
+      rawOrders.forEach(o => {
+        const itemStr = (o.items || []).map(i => `${i.name} (x${i.quantity})`).join('; ');
+        csv += `"${o.parent_name.replace(/"/g, '""')}","${itemStr.replace(/"/g, '""')}",${o.total_amount},${o.status},"${new Date(o.created_at).toLocaleString()}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Pack152_Orders_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+  </script>
+</body>
+</html>

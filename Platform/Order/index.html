@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pack Gear & Orders — Pack 152</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/auth-guard.js"></script>
+
+  <style>
+    :root {
+      --color-primary: #16a34a;
+      --color-primary-hover: #15803d;
+      --color-secondary: #2563eb;
+      --color-danger: #ef4444;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-lg: 1rem;
+      --radius-md: 0.625rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background-color: #0f172a;
+      padding-bottom: 5rem;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+      background: rgba(30, 41, 59, 0.85);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .navbar h1 { font-size: 1.35rem; font-weight: 800; color: #60a5fa; }
+
+    .btn-nav {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 2rem;
+    }
+
+    @media (max-width: 868px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    /* Existing Order Banner */
+    .order-summary-banner {
+      grid-column: 1 / -1;
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid var(--color-secondary);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* Den Collapsible Sections */
+    .den-group {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+
+    .den-group.priority {
+      border-color: #4ade80;
+      box-shadow: 0 0 15px rgba(74, 222, 128, 0.15);
+    }
+
+    summary {
+      padding: 1.1rem 1.5rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.8);
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    .priority-badge {
+      background: rgba(22, 163, 74, 0.25);
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      margin-left: 0.5rem;
+    }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .item-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .item-image {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border-radius: var(--radius-md);
+      margin-bottom: 0.75rem;
+      background: #1e293b;
+    }
+
+    .item-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .item-desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.3; }
+    .item-price { font-size: 1.1rem; font-weight: 800; color: #4ade80; margin-bottom: 0.75rem; }
+
+    .btn-add {
+      background: var(--color-secondary);
+      color: #ffffff;
+      border: none;
+      padding: 0.5rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* Cart Sidebar */
+    .cart-card {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 5rem;
+    }
+
+    .cart-card h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.5rem; }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-qty {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cart-total {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-top: 1.25rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn-order {
+      width: 100%;
+      background: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.85rem;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+    .btn-order:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <h1>Pack 152 — Gear & Orders</h1>
+    <a href="/Platform/" class="btn-nav">← Back to Hub</a>
+  </header>
+
+  <main class="container">
+    <!-- Active Order Banner -->
+    <div id="order-banner" class="order-summary-banner" style="display: none;">
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: #60a5fa;">Active Order Placed</h3>
+        <p id="order-banner-details" style="font-size: 0.875rem; color: #cbd5e1; margin-top: 0.25rem;"></p>
+      </div>
+      <button class="btn-nav" style="background: var(--color-secondary);" onclick="enableEditOrder()">✏️ Change Order</button>
+    </div>
+
+    <!-- Catalog Sections -->
+    <div id="catalog-container">
+      <div style="color: #94a3b8;">Loading items catalog...</div>
+    </div>
+
+    <!-- Shopping Cart Panel -->
+    <div class="cart-card">
+      <h3>Your Order Cart</h3>
+      <div id="cart-items">
+        <p style="font-size: 0.875rem; color: #94a3b8;">Your cart is empty.</p>
+      </div>
+      <div class="cart-total">
+        <span>Total Amount:</span>
+        <span id="cart-total-price" style="color: #4ade80;">$0.00</span>
+      </div>
+      <button id="place-order-btn" class="btn-order" onclick="submitOrder()" disabled>Place Order</button>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    var supabaseClient = null;
+
+    let userProfile = null;
+    let existingOrder = null;
+    let cart = {}; // item_id -> { id, name, price, quantity }
+    let kidsDens = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await initOrdering();
+      }
+    });
+
+    async function initOrdering() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) return;
+
+      // 1. Fetch User Profile to get Kid Dens
+      const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
+      userProfile = profile;
+      if (profile && profile.kids) {
+        kidsDens = profile.kids.map(k => (k.rank || '').trim().toLowerCase());
+      }
+
+      // 2. Fetch Existing Active Order
+      const { data: orders } = await supabaseClient.from('orders').select('*').eq('user_id', user.id).eq('status', 'placed');
+      if (orders && orders.length > 0) {
+        existingOrder = orders[0];
+        showOrderBanner(existingOrder);
+      }
+
+      // 3. Load Catalog Items
+      await loadCatalog();
+    }
+
+    function showOrderBanner(order) {
+      const banner = document.getElementById('order-banner');
+      const details = document.getElementById('order-banner-details');
+      const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0);
+      details.textContent = `Total Items: ${totalItems} | Total: $${Number(order.total_amount).toFixed(2)} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
+      banner.style.display = 'flex';
+    }
+
+    function enableEditOrder() {
+      if (!existingOrder) return;
+      cart = {};
+      existingOrder.items.forEach(i => {
+        cart[i.id] = { ...i };
+      });
+      renderCart();
+      document.getElementById('place-order-btn').textContent = 'Update Existing Order';
+      alert('Your existing order has been loaded into the cart. Make changes and click Update Existing Order.');
+    }
+
+    async function loadCatalog() {
+      const container = document.getElementById('catalog-container');
+      const { data: items, error } = await supabaseClient.from('items').select('*').order('name');
+
+      if (error || !items) {
+        container.innerHTML = '<p style="color:#ef4444;">Failed to load items catalog.</p>';
+        return;
+      }
+
+      // Group Items by target_den
+      const groups = {};
+      items.forEach(item => {
+        const den = item.target_den || 'General';
+        if (!groups[den]) groups[den] = [];
+        groups[den].push(item);
+      });
+
+      // Sort Den groups: Kids' dens first
+      const denNames = Object.keys(groups).sort((a, b) => {
+        const aIsKid = kidsDens.includes(a.toLowerCase());
+        const bIsKid = kidsDens.includes(b.toLowerCase());
+        if (aIsKid && !bIsKid) return -1;
+        if (!aIsKid && bIsKid) return 1;
+        return a.localeCompare(b);
+      });
+
+      container.innerHTML = denNames.map(den => {
+        const isPriority = kidsDens.includes(den.toLowerCase());
+        return `
+          <details class="den-group ${isPriority ? 'priority' : ''}" ${isPriority ? 'open' : ''}>
+            <summary>
+              <span>${escapeHtml(den)} Items ${isPriority ? '<span class="priority-badge">Your Scout\'s Den</span>' : ''}</span>
+              <span style="font-size:0.85rem; color:#94a3b8;">▼</span>
+            </summary>
+            <div class="items-grid">
+              ${groups[den].map(item => `
+                <div class="item-card">
+                  <div>
+                    <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${escapeHtml(item.name)}" />
+                    <div class="item-title">${escapeHtml(item.name)}</div>
+                    <div class="item-desc">${escapeHtml(item.description || '')}</div>
+                  </div>
+                  <div>
+                    <div class="item-price">$${Number(item.price).toFixed(2)}</div>
+                    <button class="btn-add" onclick="addToCart('${item.id}', '${escapeHtml(item.name)}', ${item.price})">+ Add to Cart</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </details>
+        `;
+      }).join('');
+    }
+
+    function addToCart(id, name, price) {
+      if (!cart[id]) {
+        cart[id] = { id, name, price: Number(price), quantity: 0 };
+      }
+      cart[id].quantity += 1;
+      renderCart();
+    }
+
+    function updateQty(id, delta) {
+      if (cart[id]) {
+        cart[id].quantity += delta;
+        if (cart[id].quantity <= 0) {
+          delete cart[id];
+        }
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items');
+      const totalPriceEl = document.getElementById('cart-total-price');
+      const btn = document.getElementById('place-order-btn');
+
+      const itemsList = Object.values(cart);
+      if (itemsList.length === 0) {
+        container.innerHTML = '<p style="font-size: 0.875rem; color: #94a3b8;">Your cart is empty.</p>';
+        totalPriceEl.textContent = '$0.00';
+        btn.disabled = true;
+        return;
+      }
+
+      let total = 0;
+      container.innerHTML = itemsList.map(item => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+        return `
+          <div class="cart-item">
+            <div>
+              <div style="font-weight:700;">${escapeHtml(item.name)}</div>
+              <div style="font-size:0.75rem; color:#94a3b8;">$${item.price.toFixed(2)} each</div>
+            </div>
+            <div class="qty-controls">
+              <button class="btn-qty" onclick="updateQty('${item.id}', -1)">-</button>
+              <span style="font-weight:700; width:18px; text-align:center;">${item.quantity}</span>
+              <button class="btn-qty" onclick="updateQty('${item.id}', 1)">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      totalPriceEl.textContent = `$${total.toFixed(2)}`;
+      btn.disabled = false;
+    }
+
+    async function submitOrder() {
+      const btn = document.getElementById('place-order-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting Order...';
+
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const itemsList = Object.values(cart);
+        const totalAmount = itemsList.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+        if (existingOrder) {
+          // Update existing order
+          const { error } = await supabaseClient.from('orders').update({
+            items: itemsList,
+            total_amount: totalAmount,
+            updated_at: new Date().toISOString()
+          }).eq('id', existingOrder.id);
+          if (error) throw error;
+          alert('Order updated successfully!');
+        } else {
+          // Create new order
+          const { error } = await supabaseClient.from('orders').insert({
+            user_id: user.id,
+            parent_name: userProfile ? userProfile.parent_name : 'Parent',
+            items: itemsList,
+            total_amount: totalAmount,
+            status: 'placed'
+          });
+          if (error) throw error;
+          alert('Order placed successfully!');
+        }
+
+        window.location.reload();
+      } catch (err) {
+        alert(err.message || 'Failed to submit order.');
+        btn.disabled = false;
+        btn.textContent = existingOrder ? 'Update Existing Order' : 'Place Order';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+  </script>
+</body>
+</html>
