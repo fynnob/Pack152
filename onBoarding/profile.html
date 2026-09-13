@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Step 2: Profile — Pack 152 Onboarding</title>
-
-  <!-- Supabase JS Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
     :root {
       --color-primary: #16a34a;
@@ -15,7 +12,6 @@
       --color-secondary: #2563eb;
       --color-danger: #ef4444;
       --color-warning: #eab308;
-      --color-success: #22c55e;
       --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --radius-md: 0.625rem;
       --radius-lg: 1rem;
@@ -77,17 +73,6 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .alert-banner {
-      display: none;
-      padding: 0.75rem 1rem;
-      border-radius: var(--radius-md);
-      font-size: 0.875rem;
-      margin-bottom: 1.25rem;
-      line-height: 1.4;
-    }
-    .alert-banner.error { display: block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); color: #fca5a5; }
-    .alert-banner.info { display: block; background-color: rgba(37, 99, 235, 0.2); border: 1px solid var(--color-secondary); color: #93c5fd; }
-
     .form-group { margin-bottom: 1.1rem; text-align: left; }
     .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem; }
     .form-hint { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
@@ -107,6 +92,22 @@
     .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
     select.form-control option { background-color: #0f172a; color: #ffffff; }
 
+    /* GDPR Consent Checkbox */
+    .gdpr-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      background: rgba(15, 23, 42, 0.4);
+      padding: 0.85rem;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin: 1.25rem 0;
+      font-size: 0.825rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+    .gdpr-group input[type="checkbox"] { margin-top: 0.2rem; accent-color: var(--color-primary); width: 18px; height: 18px; }
+
     /* Dynamic Kid Rows */
     .kid-row {
       background: rgba(15, 23, 42, 0.5);
@@ -115,25 +116,8 @@
       padding: 1rem;
       margin-bottom: 0.85rem;
     }
-
-    .kid-row-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-
-    .btn-remove-kid {
-      background: transparent;
-      border: none;
-      color: var(--color-danger);
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    .kid-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 700; color: #94a3b8; }
+    .btn-remove-kid { background: transparent; border: none; color: var(--color-danger); font-size: 0.8rem; font-weight: 700; cursor: pointer; }
 
     .btn-add-kid {
       width: 100%;
@@ -146,10 +130,9 @@
       font-size: 0.9rem;
       cursor: pointer;
       margin-bottom: 1.5rem;
-      transition: all 0.2s ease;
     }
-    .btn-add-kid:hover { background: rgba(37, 99, 235, 0.25); }
 
+    /* Submit Button (Error States) */
     .btn-submit {
       width: 100%;
       padding: 0.85rem 1.5rem;
@@ -163,15 +146,18 @@
       transition: all 0.2s ease;
     }
     .btn-submit:hover:not(:disabled) { background-color: var(--color-primary-hover); transform: translateY(-1px); }
-    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
 
-    /* Pending Review Screen */
-    .review-screen {
-      display: none;
-      text-align: center;
+    /* Button Danger State for Errors */
+    .btn-submit.btn-error {
+      background-color: var(--color-danger) !important;
+      color: #ffffff !important;
     }
-    .review-screen.active { display: block; }
-    .review-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* Locked Screen */
+    .locked-screen { display: none; text-align: center; }
+    .locked-screen.active { display: block; }
+    .locked-icon { font-size: 3rem; margin-bottom: 1rem; }
   </style>
 </head>
 <body>
@@ -187,11 +173,7 @@
           <p>Complete your guardian and scout details for Pack 152.</p>
         </div>
 
-        <div id="alert-banner" class="alert-banner"></div>
-
-        <form id="profile-form" onsubmit="handleProfileSubmit(event)">
-          
-          <!-- Primary Guardian -->
+        <form id="profile-form">
           <div class="section-title">Primary Guardian</div>
           
           <div class="form-group">
@@ -201,18 +183,10 @@
 
           <div class="form-group">
             <label class="form-label" for="phone-number">International Phone Number</label>
-            <input 
-              type="tel" 
-              id="phone-number" 
-              class="form-control" 
-              placeholder="+1 555 1234567" 
-              oninput="formatIntlPhone(this)"
-              required 
-            />
+            <input type="tel" id="phone-number" class="form-control" placeholder="+49 30 1234567" oninput="formatIntlPhone(this)" required />
             <div class="form-hint">Format: + (country code) (area code) (rest)</div>
           </div>
 
-          <!-- Secondary Guardian -->
           <div class="section-title">Secondary Guardian / Other Parent (Optional)</div>
 
           <div class="form-group">
@@ -222,48 +196,39 @@
 
           <div class="form-group">
             <label class="form-label" for="other-guardian-phone">Phone Number</label>
-            <input 
-              type="tel" 
-              id="other-guardian-phone" 
-              class="form-control" 
-              placeholder="+1 555 9876543" 
-              oninput="formatIntlPhone(this)"
-            />
+            <input type="tel" id="other-guardian-phone" class="form-control" placeholder="+49 30 9876543" oninput="formatIntlPhone(this)" />
           </div>
 
-          <!-- Kids / Scouts Section -->
           <div class="section-title">Children / Scouts</div>
 
-          <div id="kids-container">
-            <!-- Dynamic Kid Rows -->
-          </div>
-
+          <div id="kids-container"></div>
           <button type="button" class="btn-add-kid" onclick="addKidRow()">+ Add Another Child</button>
 
-          <!-- 128-Bit Bypass Key -->
           <div class="section-title">Instant Parent Approval Key (Optional)</div>
           <div class="form-group">
             <label class="form-label" for="bypass-key">128-Bit Key</label>
-            <input 
-              type="text" 
-              id="bypass-key" 
-              class="form-control" 
-              placeholder="e.g. e4d909c290d0fb1ca068ffaddf22cbd0" 
-              maxlength="32"
-            />
+            <input type="text" id="bypass-key" class="form-control" placeholder="e.g. e4d909c290d0fb1ca068ffaddf22cbd0" maxlength="32" />
             <div class="form-hint">Provided by Leaders for instant Parent approval. Leave blank for manual review.</div>
+          </div>
+
+          <!-- GDPR / DSGVO CONSENT (German Pack Compliance) -->
+          <div class="gdpr-group">
+            <input type="checkbox" id="gdpr-consent" required />
+            <label for="gdpr-consent">
+              Ich willige in die Speicherung und Verarbeitung meiner Daten sowie der Daten meiner Kinder für Zwecke der Pfadfindergruppe Pack 152 gemäß <strong>DSGVO / GDPR</strong> ein.
+            </label>
           </div>
 
           <button type="submit" id="submit-btn" class="btn-submit">Submit Profile for Review</button>
         </form>
       </div>
 
-      <!-- PENDING REVIEW SCREEN -->
-      <div id="review-screen" class="review-screen">
-        <div class="review-icon">⏳</div>
-        <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem;">Profile Under Review</h2>
-        <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
-          Thank you! Your profile has been submitted. A Pack 152 Leader or Cub Master will review and approve your account shortly.
+      <!-- LOCKED / UNDER REVIEW / REJECTED SCREEN -->
+      <div id="locked-screen" class="locked-screen">
+        <div id="locked-icon" class="locked-icon">⏳</div>
+        <h2 id="locked-title" style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem;">Profile Under Review</h2>
+        <p id="locked-desc" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+          Your profile is currently under review by Pack Leaders. You cannot edit your details at this time.
         </p>
         <button class="btn-submit" onclick="window.location.href='/'">Return to Home</button>
       </div>
@@ -272,7 +237,6 @@
   </main>
 
   <script>
-    // Supabase Initialization
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 
@@ -281,37 +245,27 @@
       if (window.supabase && window.supabase.createClient) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
-    } catch (err) {
-      console.warn('Supabase initialization error:', err);
-    }
+    } catch (err) { console.warn(err); }
 
-    /* International Phone Formatter: + (country) (area) (rest) */
+    /* Phone Formatter */
     function formatIntlPhone(input) {
       let val = input.value;
-      
-      if (!val.startsWith('+')) {
-        val = '+' + val.replace(/\+/g, '');
-      }
-
+      if (!val.startsWith('+')) val = '+' + val.replace(/\+/g, '');
       let digits = val.substring(1).replace(/\D/g, '');
-      
       let formatted = '+';
       if (digits.length > 0) {
         let country = digits.substring(0, Math.min(digits.length, 2));
         let area = digits.length > 2 ? digits.substring(2, Math.min(digits.length, 5)) : '';
         let rest = digits.length > 5 ? digits.substring(5) : '';
-
         formatted += country;
         if (area) formatted += ' ' + area;
         if (rest) formatted += ' ' + rest;
       }
-
       input.value = formatted;
     }
 
     /* Dynamic Kids List */
     let kidCount = 0;
-
     const RANK_OPTIONS = `
       <option value="" disabled selected>Select Rank / Status...</option>
       <option value="Pre-Cub Scout">🧸 Pre-Cub Scout (Younger Sibling)</option>
@@ -328,7 +282,6 @@
     function addKidRow() {
       kidCount++;
       const container = document.getElementById('kids-container');
-
       const kidRow = document.createElement('div');
       kidRow.className = 'kid-row';
       kidRow.id = `kid-row-${kidCount}`;
@@ -343,12 +296,9 @@
         </div>
         <div class="form-group" style="margin-bottom:0;">
           <label class="form-label">Rank / Status</label>
-          <select class="form-control kid-rank" required>
-            ${RANK_OPTIONS}
-          </select>
+          <select class="form-control kid-rank" required>${RANK_OPTIONS}</select>
         </div>
       `;
-
       container.appendChild(kidRow);
     }
 
@@ -357,14 +307,67 @@
       if (row) row.remove();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    /* Lock Screen & Existing Profile Check */
+    document.addEventListener('DOMContentLoaded', async () => {
       addKidRow();
+      attachInputChangeListeners();
+
+      // Check user session & status on load
+      if (supabaseClient) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+          window.location.href = '/?toast=not_logged_in';
+          return;
+        }
+
+        const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
+        if (profile) {
+          if (profile.status === 'under_review') {
+            showLockedScreen('⏳', 'Profile Under Review', 'Your profile is currently under review by Pack Leaders. You cannot edit your details at this time.');
+          } else if (profile.status === 'rejected') {
+            showLockedScreen('❌', 'Application Rejected', 'Your profile application was not approved. Please contact your Cub Master for assistance.');
+          } else if (profile.status === 'approved') {
+            window.location.href = '/'; // Approved -> Send to Home Router
+          }
+        }
+      }
     });
 
-    /* Form Submission */
+    function showLockedScreen(icon, title, desc) {
+      document.getElementById('form-container').style.display = 'none';
+      document.getElementById('locked-icon').textContent = icon;
+      document.getElementById('locked-title').textContent = title;
+      document.getElementById('locked-desc').textContent = desc;
+      document.getElementById('locked-screen').classList.add('active');
+    }
+
+    /* Submit Button Error State Logic */
+    function setButtonError(msg) {
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = `❌ ${msg}`;
+      submitBtn.classList.add('btn-error');
+    }
+
+    function clearButtonError() {
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn.classList.contains('btn-error')) {
+        submitBtn.classList.remove('btn-error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Profile for Review';
+      }
+    }
+
+    function attachInputChangeListeners() {
+      const form = document.getElementById('profile-form');
+      form.addEventListener('input', clearButtonError);
+      form.addEventListener('change', clearButtonError);
+    }
+
+    /* Form Handler */
     async function handleProfileSubmit(event) {
       event.preventDefault();
-      clearAlert();
+      clearButtonError();
 
       const submitBtn = document.getElementById('submit-btn');
       submitBtn.disabled = true;
@@ -378,6 +381,7 @@
         const otherGuardianName = document.getElementById('other-guardian-name').value.trim();
         const otherGuardianPhone = document.getElementById('other-guardian-phone').value.trim();
         const bypassKey = document.getElementById('bypass-key').value.trim();
+        const gdprConsent = document.getElementById('gdpr-consent').checked;
 
         const kidNameInputs = document.querySelectorAll('.kid-name');
         const kidRankInputs = document.querySelectorAll('.kid-rank');
@@ -386,56 +390,33 @@
         for (let i = 0; i < kidNameInputs.length; i++) {
           const name = kidNameInputs[i].value.trim();
           const rank = kidRankInputs[i].value;
-          if (name && rank) {
-            kids.push({ name, rank });
-          }
+          if (name && rank) kids.push({ name, rank });
         }
 
-        // Call RPC function
         const { data, error } = await supabaseClient.rpc('submit_profile', {
           p_parent_name: parentName,
           p_phone_number: phoneNumber,
           p_other_guardian_name: otherGuardianName || null,
           p_other_guardian_phone: otherGuardianPhone || null,
           p_kids: kids,
-          p_bypass_key: bypassKey || null
+          p_bypass_key: bypassKey || null,
+          p_gdpr_consent: gdprConsent
         });
 
         if (error) throw error;
 
-        // On instant approval as Parent
         if (data && data.status === 'approved') {
-          showAlert('✔ Parent approval granted via key! Redirecting...', 'info');
-          setTimeout(() => { window.location.href = '/'; }, 1000);
+          window.location.href = '/';
         } else {
-          // Show pending review screen
-          document.getElementById('form-container').style.display = 'none';
-          document.getElementById('review-screen').classList.add('active');
+          showLockedScreen('⏳', 'Profile Under Review', 'Thank you! Your profile has been submitted for Leader review.');
         }
 
       } catch (err) {
-        showAlert(err.message || 'Error submitting profile. Please try again.', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Profile for Review';
+        setButtonError(err.message || 'Invalid form submission.');
       }
     }
 
-    function showAlert(msg, type) {
-      const alert = document.getElementById('alert-banner');
-      if (alert) {
-        alert.textContent = msg;
-        alert.className = `alert-banner ${type}`;
-      }
-    }
-
-    function clearAlert() {
-      const alert = document.getElementById('alert-banner');
-      if (alert) {
-        alert.className = 'alert-banner';
-        alert.textContent = '';
-      }
-    }
+    document.getElementById('profile-form').addEventListener('submit', handleProfileSubmit);
   </script>
-
 </body>
 </html>
