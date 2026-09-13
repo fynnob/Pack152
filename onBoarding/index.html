@@ -321,10 +321,10 @@
         </div>
 
         <div class="btn-stack">
-          <button type="button" id="create-passkey-btn" class="btn btn-primary" onclick="window.createPasskey()">
+          <button type="button" id="create-passkey-btn" class="btn btn-primary" onclick="createPasskey()">
             🛡️ Create Passkey Now
           </button>
-          <button type="button" class="btn btn-secondary" onclick="window.nextStep(2)">
+          <button type="button" class="btn btn-secondary" onclick="nextStep(2)">
             Skip Passkey Creation
           </button>
         </div>
@@ -340,7 +340,7 @@
           <p>Tell us a little about your family to customize your Pack 152 feed.</p>
         </div>
 
-        <form id="profile-form" onsubmit="window.handleProfileSubmit(event)">
+        <form id="profile-form" onsubmit="handleProfileSubmit(event)">
           <div class="form-group">
             <label class="form-label" for="parent-name">Parent / Guardian Full Name</label>
             <input type="text" id="parent-name" class="form-control" placeholder="e.g. Sarah Jenkins" required />
@@ -383,7 +383,7 @@
         </div>
 
         <div class="btn-stack">
-          <button type="button" class="btn btn-primary" onclick="window.finishOnboarding()">
+          <button type="button" class="btn btn-primary" onclick="finishOnboarding()">
             Go to Pack Portal
           </button>
         </div>
@@ -394,44 +394,44 @@
 
   <script>
     // -------------------------------------------------------------------------
-    // 1. GLOBAL HELPER ALERTS (Declared upfront)
-    // -------------------------------------------------------------------------
-    window.showAlert = function(msg, type) {
-      const alert = document.getElementById('alert-banner');
-      if (alert) {
-        alert.textContent = msg;
-        alert.className = `alert-banner ${type}`;
-      }
-    };
-
-    window.clearAlert = function() {
-      const alert = document.getElementById('alert-banner');
-      if (alert) {
-        alert.className = 'alert-banner';
-        alert.textContent = '';
-      }
-    };
-
-    // -------------------------------------------------------------------------
-    // 2. SUPABASE INITIALIZATION
+    // 1. SUPABASE CLIENT SETUP (Renamed to Avoid CDN Identifier Collision)
     // -------------------------------------------------------------------------
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 
-    let supabase = null;
+    var supabaseClient = null;
     try {
       if (window.supabase && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
     } catch (err) {
       console.warn('Supabase initialization warning:', err);
     }
 
     // -------------------------------------------------------------------------
+    // 2. ALERT HELPERS
+    // -------------------------------------------------------------------------
+    function showAlert(msg, type) {
+      const alert = document.getElementById('alert-banner');
+      if (alert) {
+        alert.textContent = msg;
+        alert.className = `alert-banner ${type}`;
+      }
+    }
+
+    function clearAlert() {
+      const alert = document.getElementById('alert-banner');
+      if (alert) {
+        alert.className = 'alert-banner';
+        alert.textContent = '';
+      }
+    }
+
+    // -------------------------------------------------------------------------
     // 3. STEP SWITCHING
     // -------------------------------------------------------------------------
-    window.nextStep = function(stepNumber) {
-      window.clearAlert();
+    function nextStep(stepNumber) {
+      clearAlert();
 
       document.querySelectorAll('.step-pane').forEach(pane => pane.classList.remove('active'));
       const targetPane = document.getElementById(`step-pane-${stepNumber}`);
@@ -449,16 +449,16 @@
           }
         }
       }
-    };
+    }
 
     // -------------------------------------------------------------------------
-    // 4. CREATE PASSKEY FUNCTION (Exposed globally)
+    // 4. CREATE PASSKEY
     // -------------------------------------------------------------------------
-    window.createPasskey = async function() {
-      window.clearAlert();
+    async function createPasskey() {
+      clearAlert();
 
       if (!window.PublicKeyCredential) {
-        window.showAlert('Passkeys are not supported by your browser. You can skip this step.', 'info');
+        showAlert('Passkeys are not supported by your current browser. You can skip this step.', 'info');
         return;
       }
 
@@ -469,19 +469,18 @@
       }
 
       try {
-        if (!supabase) throw new Error('Supabase SDK not initialized.');
+        if (!supabaseClient) throw new Error('Supabase client failed to initialize.');
 
-        // Attempt Supabase registerPasskey API call
-        if (supabase.auth && typeof supabase.auth.registerPasskey === 'function') {
-          const { data, error } = await supabase.auth.registerPasskey();
+        // Execute passkey registration if supported
+        if (supabaseClient.auth && typeof supabaseClient.auth.registerPasskey === 'function') {
+          const { data, error } = await supabaseClient.auth.registerPasskey();
           if (error) throw error;
         } else {
-          // Fallback if passkeys haven't been enabled in dashboard yet
           throw new Error('Passkey feature is currently disabled in Supabase Dashboard.');
         }
 
-        window.showAlert('✔ Passkey created successfully!', 'success');
-        setTimeout(() => { window.nextStep(2); }, 1200);
+        showAlert('✔ Passkey created successfully!', 'success');
+        setTimeout(() => { nextStep(2); }, 1200);
 
       } catch (err) {
         if (btn) {
@@ -490,27 +489,27 @@
         }
 
         if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
-          window.showAlert('Passkey setup was cancelled. You can try again or skip.', 'info');
+          showAlert('Passkey setup was cancelled. You can try again or skip.', 'info');
         } else {
-          window.showAlert(err.message || 'Passkeys are not configured yet. You may skip this step.', 'error');
+          showAlert(err.message || 'Passkeys are not enabled yet. You may skip this step.', 'error');
         }
       }
-    };
+    }
 
     // -------------------------------------------------------------------------
-    // 5. STEP 2: PROFILE SUBMIT & COMPLETE
+    // 5. STEP 2: PROFILE SUBMISSION & COMPLETE
     // -------------------------------------------------------------------------
-    window.handleProfileSubmit = async function(event) {
+    async function handleProfileSubmit(event) {
       event.preventDefault();
-      window.clearAlert();
+      clearAlert();
 
       const parentName = document.getElementById('parent-name').value.trim();
       const scoutName = document.getElementById('scout-name').value.trim();
       const denRank = document.getElementById('den-rank').value;
 
       try {
-        if (supabase && supabase.auth) {
-          await supabase.auth.updateUser({
+        if (supabaseClient && supabaseClient.auth) {
+          await supabaseClient.auth.updateUser({
             data: {
               parent_name: parentName,
               scout_name: scoutName,
@@ -518,15 +517,15 @@
             }
           });
         }
-        window.nextStep(3);
+        nextStep(3);
       } catch (err) {
-        window.showAlert(err.message || 'Error saving profile.', 'error');
+        showAlert(err.message || 'Error saving profile.', 'error');
       }
-    };
+    }
 
-    window.finishOnboarding = function() {
+    function finishOnboarding() {
       window.location.href = '/';
-    };
+    }
   </script>
 
 </body>
