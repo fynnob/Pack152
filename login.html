@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Pack 152 Platform</title>
+
+  <!-- Supabase JS Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ==========================================================================
+       DESIGN TOKENS & DARK THEME
+       ========================================================================== */
+    :root {
+      --color-primary: #16a34a;         /* Scout Green */
+      --color-primary-hover: #15803d;
+      --color-secondary: #2563eb;       /* Cub Scout Blue */
+      --color-secondary-hover: #1d4ed8;
+      --color-danger: #ef4444;          /* Red */
+      --color-success: #22c55e;         /* Green */
+
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --radius-md: 0.625rem;
+      --radius-lg: 1rem;
+      --radius-full: 9999px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
+                  url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') 
+                  center/cover no-repeat fixed;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10vh 1.5rem 3rem 1.5rem;
+    }
+
+    .auth-card {
+      background: rgba(30, 41, 59, 0.9);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 440px;
+      padding: 2.25rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .card-header h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-header p {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    /* Tab Switcher */
+    .method-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 0.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.65rem 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--color-secondary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Passkey Button Display */
+    .passkey-box {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+    }
+
+    .passkey-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Form Controls */
+    .form-group { margin-bottom: 1.25rem; text-align: left; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem; }
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      font-family: var(--font-sans);
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      color: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
+
+    /* Submit / Error Buttons */
+    .btn-submit {
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      background-color: var(--color-primary);
+      color: #ffffff;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-submit:hover:not(:disabled) { background-color: var(--color-primary-hover); transform: translateY(-1px); }
+    .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+    
+    .btn-submit.btn-error {
+      background-color: var(--color-danger) !important;
+      color: #ffffff !important;
+    }
+
+    /* Views Toggle */
+    .auth-view { display: none; }
+    .auth-view.active { display: block; }
+
+    .footer-link {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+    .footer-link a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <main class="page-wrapper">
+    <div class="auth-card">
+
+      <div class="card-header">
+        <h1>Welcome Back</h1>
+        <p>Sign in to Cub Scout Pack 152</p>
+      </div>
+
+      <!-- AUTH METHOD TAB SWITCHER -->
+      <div class="method-tabs">
+        <button id="tab-passkey" class="tab-btn active" onclick="switchTab('passkey')">🔑 Passkey</button>
+        <button id="tab-email" class="tab-btn" onclick="switchTab('email')">✉️ Email 2FA Code</button>
+      </div>
+
+      <!-- VIEW 1: PASSKEY LOGIN -->
+      <div id="view-passkey" class="auth-view active">
+        <div class="passkey-box">
+          <div class="passkey-icon">🛡️</div>
+          <p style="font-size: 0.875rem; color: #cbd5e1;">Use your Face ID, Touch ID, or Security Key to sign in instantly.</p>
+        </div>
+
+        <button type="button" id="btn-passkey-login" class="btn-submit" onclick="loginWithPasskey()">
+          🔑 Sign In with Passkey
+        </button>
+      </div>
+
+      <!-- VIEW 2: EMAIL OTP / MAGIC LINK LOGIN -->
+      <div id="view-email" class="auth-view">
+        <!-- Step A: Enter Email -->
+        <form id="email-request-form" onsubmit="handleSendOtp(event)">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input type="email" id="login-email" class="form-control" placeholder="parent@example.com" required />
+          </div>
+
+          <button type="submit" id="btn-email-submit" class="btn-submit">
+            📩 Send Login Code
+          </button>
+        </form>
+
+        <!-- Step B: Enter Received 6-Digit OTP Code -->
+        <form id="email-verify-form" onsubmit="handleVerifyOtp(event)" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="otp-code">6-Digit Verification Code</label>
+            <input type="text" id="otp-code" class="form-control" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required />
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.35rem;">Check your inbox for the code.</div>
+          </div>
+
+          <button type="submit" id="btn-verify-submit" class="btn-submit">
+            ✔ Verify & Log In
+          </button>
+        </form>
+      </div>
+
+      <div class="footer-link">
+        Don't have an account yet? <a href="/signUp">Sign Up</a>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    /* ==========================================================================
+       SUPABASE CLIENT SETUP (WITH EXPERIMENTAL PASSKEY FLAG)
+       ========================================================================== */
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+
+    var supabaseClient = null;
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            experimental: {
+              passkey: true
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('Supabase initialization warning:', err);
+    }
+
+    let activeEmail = '';
+
+    /* ==========================================================================
+       TAB SWITCHING & INPUT RECOVERY
+       ========================================================================== */
+    function switchTab(method) {
+      clearButtonErrors();
+
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.auth-view').forEach(view => view.classList.remove('active'));
+
+      if (method === 'passkey') {
+        document.getElementById('tab-passkey').classList.add('active');
+        document.getElementById('view-passkey').classList.add('active');
+      } else {
+        document.getElementById('tab-email').classList.add('active');
+        document.getElementById('view-email').classList.add('active');
+      }
+    }
+
+    /* Attach input listeners to clear button error messages when typed into */
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', clearButtonErrors);
+    });
+
+    function setButtonError(btnId, defaultText, msg) {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = `❌ ${msg}`;
+        btn.classList.add('btn-error');
+        btn.dataset.defaultText = defaultText;
+      }
+    }
+
+    function clearButtonErrors() {
+      document.querySelectorAll('.btn-submit').forEach(btn => {
+        if (btn.classList.contains('btn-error')) {
+          btn.classList.remove('btn-error');
+          btn.disabled = false;
+          btn.textContent = btn.dataset.defaultText || 'Submit';
+        }
+      });
+    }
+
+    /* ==========================================================================
+       ROUTER: CHECK PROFILE & REDIRECT UPON AUTHENTICATION
+       ========================================================================== */
+    async function handleAuthSuccess() {
+      try {
+        if (!supabaseClient) throw new Error('Supabase client failed to load.');
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error('Session could not be established.');
+
+        // Query user's profile table
+        const { data: profile, error } = await supabaseClient
+          .from('profile')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        // If no profile exists, send to onboarding
+        if (error || !profile) {
+          window.location.href = '/onBoarding/';
+          return;
+        }
+
+        // Handle profile status & role routing
+        if (profile.status === 'under_review' || profile.status === 'rejected') {
+          window.location.href = '/onBoarding/profile.html';
+        } else if (profile.status === 'approved') {
+          if (profile.role === 'leader' || profile.role === 'cub_master') {
+            window.location.href = '/select';
+          } else if (profile.role === 'parent') {
+            window.location.href = '/Platform/';
+          }
+        }
+      } catch (err) {
+        setButtonError('btn-passkey-login', '🔑 Sign In with Passkey', err.message || 'Routing failed');
+      }
+    }
+
+    /* ==========================================================================
+       METHOD 1: PASSKEY LOGIN (Face ID / Touch ID / WebAuthn)
+       ========================================================================== */
+    async function loginWithPasskey() {
+      clearButtonErrors();
+
+      if (!window.PublicKeyCredential) {
+        setButtonError('btn-passkey-login', '🔑 Sign In with Passkey', 'Passkeys not supported on this device.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-passkey-login');
+      btn.disabled = true;
+      btn.textContent = 'Prompting Biometrics...';
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client not loaded.');
+
+        if (supabaseClient.auth && typeof supabaseClient.auth.signInWithPasskey === 'function') {
+          // Native Supabase discoverable passkey sign-in ceremony
+          const { data, error } = await supabaseClient.auth.signInWithPasskey();
+          if (error) throw error;
+          
+          handleAuthSuccess();
+        } else {
+          throw new Error('Passkeys are not configured in Supabase.');
+        }
+      } catch (err) {
+        if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
+          btn.disabled = false;
+          btn.textContent = '🔑 Sign In with Passkey';
+        } else {
+          setButtonError('btn-passkey-login', '🔑 Sign In with Passkey', err.message || 'Passkey login failed');
+        }
+      }
+    }
+
+    /* ==========================================================================
+       METHOD 2: EMAIL OTP / 2FA LOGIN
+       ========================================================================== */
+    async function handleSendOtp(event) {
+      event.preventDefault();
+      clearButtonErrors();
+
+      const emailInput = document.getElementById('login-email');
+      activeEmail = emailInput.value.trim();
+
+      const btn = document.getElementById('btn-email-submit');
+      btn.disabled = true;
+      btn.textContent = 'Sending Code...';
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client not loaded.');
+
+        const { error } = await supabaseClient.auth.signInWithOtp({
+          email: activeEmail,
+          options: {
+            shouldCreateUser: false // Prevents sign-up via login form
+          }
+        });
+
+        if (error) throw error;
+
+        // Hide Email Input, Show OTP Code Input Form
+        document.getElementById('email-request-form').style.display = 'none';
+        document.getElementById('email-verify-form').style.display = 'block';
+
+      } catch (err) {
+        setButtonError('btn-email-submit', '📩 Send Login Code', err.message || 'Email error');
+      }
+    }
+
+    async function handleVerifyOtp(event) {
+      event.preventDefault();
+      clearButtonErrors();
+
+      const token = document.getElementById('otp-code').value.trim();
+      const btn = document.getElementById('btn-verify-submit');
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client not loaded.');
+
+        const { data, error } = await supabaseClient.auth.verifyOtp({
+          email: activeEmail,
+          token: token,
+          type: 'email'
+        });
+
+        if (error) throw error;
+
+        handleAuthSuccess();
+
+      } catch (err) {
+        setButtonError('btn-verify-submit', '✔ Verify & Log In', err.message || 'Invalid code');
+      }
+    }
+  </script>
+
+</body>
+</html>
