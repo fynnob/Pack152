@@ -181,8 +181,7 @@
             <div id="rule-spec" class="rule-item"><span class="rule-icon">✖</span> Special character (!@#$%^&*...)</div>
           </div>
 
-          <!-- hCaptcha Container -->
-          <!-- Replace data-sitekey with your actual hCaptcha Site Key -->
+          <!-- hCaptcha Container with your Site Key -->
           <div class="hcaptcha-wrapper">
             <div 
               class="h-captcha" 
@@ -204,13 +203,13 @@
       <div id="step-otp" class="step-pane">
         <div class="card-header">
           <h1>Verify Email</h1>
-          <p>Enter the OTP code sent to your email</p>
+          <p>Enter the code sent to your email</p>
         </div>
 
         <form id="otp-form">
           <div class="form-group">
             <label class="form-label" for="otp-code">Enter Code</label>
-            <input type="text" id="otp-code" class="form-control otp-input" placeholder="12345678" maxlength="8" autocomplete="one-time-code" required />
+            <input type="text" id="otp-code" class="form-control otp-input" placeholder="123456" maxlength="8" autocomplete="one-time-code" required />
           </div>
           <button type="submit" id="verify-btn" class="btn">Verify & Complete Sign Up</button>
         </form>
@@ -229,7 +228,7 @@
     // hCaptcha Callbacks
     window.onCaptchaSuccess = function(token) {
       hcaptchaToken = token;
-      window.validatePassword(); // Re-evaluate button state
+      window.validatePassword();
     };
 
     window.onCaptchaExpired = function() {
@@ -269,7 +268,7 @@
         }
       }
 
-      // Check if Captcha is enabled in DOM and solved (optional check if captcha is turned off)
+      // Check Captcha if present in DOM
       const hcaptchaElement = document.querySelector('.h-captcha');
       const isCaptchaSolved = !hcaptchaElement || Boolean(hcaptchaToken);
 
@@ -333,7 +332,6 @@
         const client = getSupabase();
         if (!client) throw new Error('Supabase SDK failed to load. Please refresh the page and try again.');
 
-        // Pass captchaToken in options if available
         const signUpOptions = {};
         if (hcaptchaToken) {
           signUpOptions.captchaToken = hcaptchaToken;
@@ -393,7 +391,7 @@
         }, 1000);
 
       } catch (err) {
-        showAlert(err.message || 'Invalid or expired OTP code. Please try again.', 'error');
+        showAlert(err.message || 'Invalid or expired code. Please try again.', 'error');
         verifyBtn.disabled = false;
         verifyBtn.textContent = 'Verify & Complete Sign Up';
       }
