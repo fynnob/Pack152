@@ -394,7 +394,7 @@
 
   <script>
     // -------------------------------------------------------------------------
-    // 1. SUPABASE CLIENT SETUP (Renamed to Avoid CDN Identifier Collision)
+    // 1. SUPABASE CLIENT SETUP (WITH EXPERIMENTAL PASSKEY FLAG)
     // -------------------------------------------------------------------------
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
@@ -402,7 +402,13 @@
     var supabaseClient = null;
     try {
       if (window.supabase && window.supabase.createClient) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            experimental: {
+              passkey: true
+            }
+          }
+        });
       }
     } catch (err) {
       console.warn('Supabase initialization warning:', err);
@@ -471,12 +477,11 @@
       try {
         if (!supabaseClient) throw new Error('Supabase client failed to initialize.');
 
-        // Execute passkey registration if supported
         if (supabaseClient.auth && typeof supabaseClient.auth.registerPasskey === 'function') {
           const { data, error } = await supabaseClient.auth.registerPasskey();
           if (error) throw error;
         } else {
-          throw new Error('Passkey feature is currently disabled in Supabase Dashboard.');
+          throw new Error('Passkey feature is not available in this build of the SDK.');
         }
 
         showAlert('✔ Passkey created successfully!', 'success');
@@ -491,7 +496,7 @@
         if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
           showAlert('Passkey setup was cancelled. You can try again or skip.', 'info');
         } else {
-          showAlert(err.message || 'Passkeys are not enabled yet. You may skip this step.', 'error');
+          showAlert(err.message || 'Passkey setup failed. You may skip this step.', 'error');
         }
       }
     }
