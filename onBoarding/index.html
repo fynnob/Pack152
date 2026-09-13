@@ -321,10 +321,10 @@
         </div>
 
         <div class="btn-stack">
-          <button type="button" id="create-passkey-btn" class="btn btn-primary" onclick="createPasskey()">
+          <button type="button" id="create-passkey-btn" class="btn btn-primary" onclick="window.createPasskey()">
             🛡️ Create Passkey Now
           </button>
-          <button type="button" class="btn btn-secondary" onclick="nextStep(2)">
+          <button type="button" class="btn btn-secondary" onclick="window.nextStep(2)">
             Skip Passkey Creation
           </button>
         </div>
@@ -340,7 +340,7 @@
           <p>Tell us a little about your family to customize your Pack 152 feed.</p>
         </div>
 
-        <form id="profile-form" onsubmit="handleProfileSubmit(event)">
+        <form id="profile-form" onsubmit="window.handleProfileSubmit(event)">
           <div class="form-group">
             <label class="form-label" for="parent-name">Parent / Guardian Full Name</label>
             <input type="text" id="parent-name" class="form-control" placeholder="e.g. Sarah Jenkins" required />
@@ -383,7 +383,7 @@
         </div>
 
         <div class="btn-stack">
-          <button type="button" class="btn btn-primary" onclick="finishOnboarding()">
+          <button type="button" class="btn btn-primary" onclick="window.finishOnboarding()">
             Go to Pack Portal
           </button>
         </div>
@@ -393,99 +393,123 @@
   </main>
 
   <script>
-    /* ==========================================================================
-       1. INITIALIZE SUPABASE WITH PASSKEY SUPPORT ENABLED
-       ========================================================================== */
+    // -------------------------------------------------------------------------
+    // 1. GLOBAL HELPER ALERTS (Declared upfront)
+    // -------------------------------------------------------------------------
+    window.showAlert = function(msg, type) {
+      const alert = document.getElementById('alert-banner');
+      if (alert) {
+        alert.textContent = msg;
+        alert.className = `alert-banner ${type}`;
+      }
+    };
+
+    window.clearAlert = function() {
+      const alert = document.getElementById('alert-banner');
+      if (alert) {
+        alert.className = 'alert-banner';
+        alert.textContent = '';
+      }
+    };
+
+    // -------------------------------------------------------------------------
+    // 2. SUPABASE INITIALIZATION
+    // -------------------------------------------------------------------------
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 
-    // Enable experimental passkey support in Supabase JS SDK
-    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        experimental: { passkey: true }
+    let supabase = null;
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
-    }) : null;
+    } catch (err) {
+      console.warn('Supabase initialization warning:', err);
+    }
 
-    /* ==========================================================================
-       2. STEP 1: CREATE PASSKEY FUNCTION
-       ========================================================================== */
-    async function createPasskey() {
-      clearAlert();
+    // -------------------------------------------------------------------------
+    // 3. STEP SWITCHING
+    // -------------------------------------------------------------------------
+    window.nextStep = function(stepNumber) {
+      window.clearAlert();
 
-      // Check browser WebAuthn support
+      document.querySelectorAll('.step-pane').forEach(pane => pane.classList.remove('active'));
+      const targetPane = document.getElementById(`step-pane-${stepNumber}`);
+      if (targetPane) targetPane.classList.add('active');
+
+      for (let i = 1; i <= 3; i++) {
+        const item = document.getElementById(`prog-step-${i}`);
+        if (item) {
+          if (i < stepNumber) {
+            item.className = 'step-item completed';
+          } else if (i === stepNumber) {
+            item.className = 'step-item active';
+          } else {
+            item.className = 'step-item';
+          }
+        }
+      }
+    };
+
+    // -------------------------------------------------------------------------
+    // 4. CREATE PASSKEY FUNCTION (Exposed globally)
+    // -------------------------------------------------------------------------
+    window.createPasskey = async function() {
+      window.clearAlert();
+
       if (!window.PublicKeyCredential) {
-        showAlert('Passkeys are not supported by your current browser. You may skip this step.', 'error');
+        window.showAlert('Passkeys are not supported by your browser. You can skip this step.', 'info');
         return;
       }
 
       const btn = document.getElementById('create-passkey-btn');
-      btn.disabled = true;
-      btn.textContent = 'Prompting Biometrics...';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Prompting Biometrics...';
+      }
 
       try {
-        if (!supabase) throw new Error('Supabase SDK failed to load.');
+        if (!supabase) throw new Error('Supabase SDK not initialized.');
 
-        // Trigger Supabase native Passkey registration ceremony
-        const { data, error } = await supabase.auth.registerPasskey();
+        // Attempt Supabase registerPasskey API call
+        if (supabase.auth && typeof supabase.auth.registerPasskey === 'function') {
+          const { data, error } = await supabase.auth.registerPasskey();
+          if (error) throw error;
+        } else {
+          // Fallback if passkeys haven't been enabled in dashboard yet
+          throw new Error('Passkey feature is currently disabled in Supabase Dashboard.');
+        }
 
-        if (error) throw error;
-
-        showAlert('✔ Passkey created successfully!', 'success');
-        
-        // Auto-advance to Step 2 after 1.2 seconds
-        setTimeout(() => {
-          nextStep(2);
-        }, 1200);
+        window.showAlert('✔ Passkey created successfully!', 'success');
+        setTimeout(() => { window.nextStep(2); }, 1200);
 
       } catch (err) {
-        btn.disabled = false;
-        btn.textContent = '🛡️ Create Passkey Now';
-        
-        if (err.name === 'NotAllowedError' || err.message.includes('cancel')) {
-          showAlert('Passkey setup was cancelled. You can try again or skip.', 'info');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🛡️ Create Passkey Now';
+        }
+
+        if (err.name === 'NotAllowedError' || (err.message && err.message.includes('cancel'))) {
+          window.showAlert('Passkey setup was cancelled. You can try again or skip.', 'info');
         } else {
-          showAlert(err.message || 'Failed to create passkey. You can skip for now.', 'error');
+          window.showAlert(err.message || 'Passkeys are not configured yet. You may skip this step.', 'error');
         }
       }
-    }
+    };
 
-    /* ==========================================================================
-       3. NAVIGATION & STEP SWITCHING
-       ========================================================================== */
-    function nextStep(stepNumber) {
-      clearAlert();
-
-      // Update Step Panes
-      document.querySelectorAll('.step-pane').forEach(pane => pane.classList.remove('active'));
-      document.getElementById(`step-pane-${stepNumber}`).classList.add('active');
-
-      // Update Progress Indicator
-      for (let i = 1; i <= 3; i++) {
-        const item = document.getElementById(`prog-step-${i}`);
-        if (i < stepNumber) {
-          item.className = 'step-item completed';
-        } else if (i === stepNumber) {
-          item.className = 'step-item active';
-        } else {
-          item.className = 'step-item';
-        }
-      }
-    }
-
-    /* ==========================================================================
-       4. STEP 2: PROFILE SUBMISSION
-       ========================================================================== */
-    async function handleProfileSubmit(event) {
+    // -------------------------------------------------------------------------
+    // 5. STEP 2: PROFILE SUBMIT & COMPLETE
+    // -------------------------------------------------------------------------
+    window.handleProfileSubmit = async function(event) {
       event.preventDefault();
-      clearAlert();
+      window.clearAlert();
 
       const parentName = document.getElementById('parent-name').value.trim();
       const scoutName = document.getElementById('scout-name').value.trim();
       const denRank = document.getElementById('den-rank').value;
 
       try {
-        if (supabase) {
-          // Store profile metadata in user session
+        if (supabase && supabase.auth) {
           await supabase.auth.updateUser({
             data: {
               parent_name: parentName,
@@ -494,29 +518,15 @@
             }
           });
         }
-        nextStep(3);
+        window.nextStep(3);
       } catch (err) {
-        showAlert(err.message || 'Error saving profile.', 'error');
+        window.showAlert(err.message || 'Error saving profile.', 'error');
       }
-    }
+    };
 
-    function finishOnboarding() {
-      // Redirect to main portal/dashboard
+    window.finishOnboarding = function() {
       window.location.href = '/';
-    }
-
-    /* Alerts Helpers */
-    function showAlert(msg, type) {
-      const alert = document.getElementById('alert-banner');
-      alert.textContent = msg;
-      alert.className = `alert-banner ${type}`;
-    }
-
-    function clearAlert() {
-      const alert = document.getElementById('alert-banner');
-      alert.className = 'alert-banner';
-      alert.textContent = '';
-    }
+    };
   </script>
 
 </body>
