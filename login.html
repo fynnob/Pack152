@@ -7,6 +7,9 @@
 
   <!-- Supabase JS Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- hCaptcha Script API -->
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
   <style>
     /* ==========================================================================
@@ -43,7 +46,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 10vh 1.5rem 3rem 1.5rem;
+      padding: 8vh 1.5rem 3rem 1.5rem;
     }
 
     .auth-card {
@@ -104,7 +107,7 @@
       box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
     }
 
-    /* Passkey Button Display */
+    /* Passkey Display Box */
     .passkey-box {
       text-align: center;
       padding: 1.5rem 1rem;
@@ -136,6 +139,13 @@
     }
     .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
 
+    /* Captcha Container */
+    .captcha-container {
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: center;
+    }
+
     /* Submit / Error Buttons */
     .btn-submit {
       width: 100%;
@@ -161,7 +171,6 @@
       color: #ffffff !important;
     }
 
-    /* Views Toggle */
     .auth-view { display: none; }
     .auth-view.active { display: block; }
 
@@ -195,7 +204,7 @@
         <button id="tab-email" class="tab-btn" onclick="switchTab('email')">✉️ Email 2FA Code</button>
       </div>
 
-      <!-- VIEW 1: PASSKEY LOGIN -->
+      <!-- VIEW 1: PASSKEY LOGIN (No Captcha Needed - Protected by Biometrics) -->
       <div id="view-passkey" class="auth-view active">
         <div class="passkey-box">
           <div class="passkey-icon">🛡️</div>
@@ -207,13 +216,23 @@
         </button>
       </div>
 
-      <!-- VIEW 2: EMAIL OTP / MAGIC LINK LOGIN -->
+      <!-- VIEW 2: EMAIL OTP / 2FA LOGIN (Captcha Protected) -->
       <div id="view-email" class="auth-view">
-        <!-- Step A: Enter Email -->
+        
+        <!-- Step A: Enter Email & Solve Captcha -->
         <form id="email-request-form" onsubmit="handleSendOtp(event)">
           <div class="form-group">
             <label class="form-label" for="login-email">Email Address</label>
             <input type="email" id="login-email" class="form-control" placeholder="parent@example.com" required />
+          </div>
+
+          <!-- hCaptcha Widget Container -->
+          <div class="captcha-container">
+            <div 
+              class="h-captcha" 
+              data-sitekey="10000000-ffff-ffff-ffff-000000000001" 
+              data-theme="dark">
+            </div>
           </div>
 
           <button type="submit" id="btn-email-submit" class="btn-submit">
@@ -233,6 +252,7 @@
             ✔ Verify & Log In
           </button>
         </form>
+
       </div>
 
       <div class="footer-link">
@@ -243,9 +263,7 @@
   </main>
 
   <script>
-    /* ==========================================================================
-       SUPABASE CLIENT SETUP (WITH EXPERIMENTAL PASSKEY FLAG)
-       ========================================================================== */
+    // Supabase Setup
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 
@@ -254,9 +272,7 @@
       if (window.supabase && window.supabase.createClient) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           auth: {
-            experimental: {
-              passkey: true
-            }
+            experimental: { passkey: true }
           }
         });
       }
@@ -266,9 +282,7 @@
 
     let activeEmail = '';
 
-    /* ==========================================================================
-       TAB SWITCHING & INPUT RECOVERY
-       ========================================================================== */
+    /* Tab Switching */
     function switchTab(method) {
       clearButtonErrors();
 
@@ -284,7 +298,7 @@
       }
     }
 
-    /* Attach input listeners to clear button error messages when typed into */
+    /* In-Button Error Helpers */
     document.querySelectorAll('input').forEach(input => {
       input.addEventListener('input', clearButtonErrors);
     });
@@ -309,9 +323,7 @@
       });
     }
 
-    /* ==========================================================================
-       ROUTER: CHECK PROFILE & REDIRECT UPON AUTHENTICATION
-       ========================================================================== */
+    /* Session & Status Router */
     async function handleAuthSuccess() {
       try {
         if (!supabaseClient) throw new Error('Supabase client failed to load.');
@@ -319,20 +331,17 @@
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Session could not be established.');
 
-        // Query user's profile table
         const { data: profile, error } = await supabaseClient
           .from('profile')
           .select('*')
           .eq('id', user.id)
           .single();
 
-        // If no profile exists, send to onboarding
         if (error || !profile) {
           window.location.href = '/onBoarding/';
           return;
         }
 
-        // Handle profile status & role routing
         if (profile.status === 'under_review' || profile.status === 'rejected') {
           window.location.href = '/onBoarding/profile.html';
         } else if (profile.status === 'approved') {
@@ -347,9 +356,7 @@
       }
     }
 
-    /* ==========================================================================
-       METHOD 1: PASSKEY LOGIN (Face ID / Touch ID / WebAuthn)
-       ========================================================================== */
+    /* PASSKEY LOGIN */
     async function loginWithPasskey() {
       clearButtonErrors();
 
@@ -366,10 +373,8 @@
         if (!supabaseClient) throw new Error('Supabase client not loaded.');
 
         if (supabaseClient.auth && typeof supabaseClient.auth.signInWithPasskey === 'function') {
-          // Native Supabase discoverable passkey sign-in ceremony
           const { data, error } = await supabaseClient.auth.signInWithPasskey();
           if (error) throw error;
-          
           handleAuthSuccess();
         } else {
           throw new Error('Passkeys are not configured in Supabase.');
@@ -384,15 +389,24 @@
       }
     }
 
-    /* ==========================================================================
-       METHOD 2: EMAIL OTP / 2FA LOGIN
-       ========================================================================== */
+    /* EMAIL 2FA LOGIN WITH CAPTCHA VALIDATION */
     async function handleSendOtp(event) {
       event.preventDefault();
       clearButtonErrors();
 
       const emailInput = document.getElementById('login-email');
       activeEmail = emailInput.value.trim();
+
+      // Retrieve Captcha Token from hCaptcha Widget
+      let captchaToken = null;
+      if (window.hcaptcha) {
+        captchaToken = window.hcaptcha.getResponse();
+      }
+
+      if (!captchaToken) {
+        setButtonError('btn-email-submit', '📩 Send Login Code', 'Please complete the Captcha check.');
+        return;
+      }
 
       const btn = document.getElementById('btn-email-submit');
       btn.disabled = true;
@@ -404,17 +418,19 @@
         const { error } = await supabaseClient.auth.signInWithOtp({
           email: activeEmail,
           options: {
-            shouldCreateUser: false // Prevents sign-up via login form
+            shouldCreateUser: false,
+            captchaToken: captchaToken // Sends captcha token to Supabase backend
           }
         });
 
         if (error) throw error;
 
-        // Hide Email Input, Show OTP Code Input Form
+        // Hide Request Form, Show OTP Verification Code Input
         document.getElementById('email-request-form').style.display = 'none';
         document.getElementById('email-verify-form').style.display = 'block';
 
       } catch (err) {
+        if (window.hcaptcha) window.hcaptcha.reset(); // Reset Captcha on error
         setButtonError('btn-email-submit', '📩 Send Login Code', err.message || 'Email error');
       }
     }
@@ -438,7 +454,6 @@
         });
 
         if (error) throw error;
-
         handleAuthSuccess();
 
       } catch (err) {
