@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step 2: Profile — Pack 152 Onboarding</title>
+
+  <!-- Supabase JS Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --color-primary: #16a34a;
+      --color-primary-hover: #15803d;
+      --color-secondary: #2563eb;
+      --color-danger: #ef4444;
+      --color-success: #22c55e;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-md: 0.625rem;
+      --radius-lg: 1rem;
+      --radius-full: 9999px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: #ffffff;
+      background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
+                  url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') 
+                  center/cover no-repeat fixed;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6vh 1.5rem 3rem 1.5rem;
+    }
+
+    .auth-card {
+      background: rgba(30, 41, 59, 0.9);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 520px;
+      padding: 2.25rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .step-tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-full);
+      background-color: rgba(37, 99, 235, 0.2);
+      border: 1px solid #2563eb;
+      color: #60a5fa;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .card-header h1 { font-size: 1.85rem; font-weight: 800; margin-bottom: 0.4rem; }
+    .card-header p { font-size: 0.95rem; color: #94a3b8; margin-bottom: 1.5rem; }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #4ade80;
+      margin: 1.5rem 0 0.75rem 0;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .alert-banner {
+      display: none;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      line-height: 1.4;
+    }
+    .alert-banner.error { display: block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-danger); color: #fca5a5; }
+    .alert-banner.info { display: block; background-color: rgba(37, 99, 235, 0.2); border: 1px solid var(--color-secondary); color: #93c5fd; }
+
+    .form-group { margin-bottom: 1.1rem; text-align: left; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem; }
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      font-family: var(--font-sans);
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      color: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .form-control:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25); }
+    select.form-control option { background-color: #0f172a; color: #ffffff; }
+
+    /* Kids Container & Rows */
+    .kid-row {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 0.85rem;
+      position: relative;
+    }
+
+    .kid-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .btn-remove-kid {
+      background: transparent;
+      border: none;
+      color: var(--color-danger);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-remove-kid:hover { text-decoration: underline; }
+
+    .btn-add-kid {
+      width: 100%;
+      background: rgba(37, 99, 235, 0.15);
+      border: 1.5px dashed var(--color-secondary);
+      color: #60a5fa;
+      padding: 0.65rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-bottom: 1.5rem;
+      transition: all 0.2s ease;
+    }
+    .btn-add-kid:hover { background: rgba(37, 99, 235, 0.25); }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      background-color: var(--color-primary);
+      color: #ffffff;
+      transition: all 0.2s ease;
+    }
+    .btn-submit:hover:not(:disabled) { background-color: var(--color-primary-hover); transform: translateY(-1px); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <main class="page-wrapper">
+    <div class="auth-card">
+      <span class="step-tag">Step 2 of 2</span>
+      
+      <div class="card-header">
+        <h1>Family Profile</h1>
+        <p>Complete your guardian and scout information to get started.</p>
+      </div>
+
+      <div id="alert-banner" class="alert-banner"></div>
+
+      <form id="profile-form" onsubmit="handleProfileSubmit(event)">
+        
+        <!-- Primary Guardian -->
+        <div class="section-title">Primary Guardian</div>
+        
+        <div class="form-group">
+          <label class="form-label" for="parent-name">Full Name</label>
+          <input type="text" id="parent-name" class="form-control" placeholder="e.g. Jane Doe" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone-number">Phone Number</label>
+          <input type="tel" id="phone-number" class="form-control" placeholder="(555) 000-0000" required />
+        </div>
+
+        <!-- Secondary Guardian (Optional) -->
+        <div class="section-title">Secondary Guardian / Other Parent (Optional)</div>
+
+        <div class="form-group">
+          <label class="form-label" for="other-guardian-name">Name</label>
+          <input type="text" id="other-guardian-name" class="form-control" placeholder="e.g. John Doe" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="other-guardian-phone">Phone Number</label>
+          <input type="tel" id="other-guardian-phone" class="form-control" placeholder="(555) 000-0000" />
+        </div>
+
+        <!-- Kids / Scouts Section -->
+        <div class="section-title">Children / Scouts</div>
+
+        <div id="kids-container">
+          <!-- Dynamic Kid Rows Inserted Here -->
+        </div>
+
+        <button type="button" class="btn-add-kid" onclick="addKidRow()">+ Add Another Child</button>
+
+        <button type="submit" id="submit-btn" class="btn-submit">Complete Onboarding</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    // Supabase Credentials
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+
+    var supabaseClient = null;
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (err) {
+      console.warn('Supabase initialization error:', err);
+    }
+
+    let kidCount = 0;
+
+    // Rank options required by prompt
+    const RANK_OPTIONS = `
+      <option value="" disabled selected>Select Rank / Status...</option>
+      <option value="Pre-Cub Scout">🧸 Pre-Cub Scout (Younger Sibling)</option>
+      <option value="Lion">🦁 Lion (Kindergarten)</option>
+      <option value="Tiger">🐯 Tiger (1st Grade)</option>
+      <option value="Wolf">🐺 Wolf (2nd Grade)</option>
+      <option value="Bear">🐻 Bear (3rd Grade)</option>
+      <option value="Webelos">🏕️ Webelos (4th Grade)</option>
+      <option value="Arrow of Light">🛡️ Arrow of Light (5th Grade)</option>
+      <option value="Scouts BSA">⚜️ Scouts BSA (Older Sibling)</option>
+      <option value="Other">Other</option>
+    `;
+
+    // Dynamically insert a Kid Row
+    function addKidRow() {
+      kidCount++;
+      const container = document.getElementById('kids-container');
+
+      const kidRow = document.createElement('div');
+      kidRow.className = 'kid-row';
+      kidRow.id = `kid-row-${kidCount}`;
+      kidRow.innerHTML = `
+        <div class="kid-row-header">
+          <span>Child #${kidCount}</span>
+          ${kidCount > 1 ? `<button type="button" class="btn-remove-kid" onclick="removeKidRow(${kidCount})">Remove</button>` : ''}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-control kid-name" placeholder="Child's Full Name" required />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Rank / Status</label>
+          <select class="form-control kid-rank" required>
+            ${RANK_OPTIONS}
+          </select>
+        </div>
+      `;
+
+      container.appendChild(kidRow);
+    }
+
+    function removeKidRow(id) {
+      const row = document.getElementById(`kid-row-${id}`);
+      if (row) row.remove();
+    }
+
+    // On Load: Render the first required kid row
+    document.addEventListener('DOMContentLoaded', () => {
+      addKidRow();
+    });
+
+    // Form Handler: Collect data and upsert into Supabase `profile` table
+    async function handleProfileSubmit(event) {
+      event.preventDefault();
+      clearAlert();
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving Profile...';
+
+      try {
+        if (!supabaseClient) throw new Error('Supabase client failed to load.');
+
+        // Get currently authenticated user
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        if (userError || !user) {
+          throw new Error('User session not found. Please log in again.');
+        }
+
+        // Collect Form Inputs
+        const parentName = document.getElementById('parent-name').value.trim();
+        const phoneNumber = document.getElementById('phone-number').value.trim();
+        const otherGuardianName = document.getElementById('other-guardian-name').value.trim();
+        const otherGuardianPhone = document.getElementById('other-guardian-phone').value.trim();
+
+        // Collect Kids Array
+        const kidNameInputs = document.querySelectorAll('.kid-name');
+        const kidRankInputs = document.querySelectorAll('.kid-rank');
+        const kids = [];
+
+        for (let i = 0; i < kidNameInputs.length; i++) {
+          const name = kidNameInputs[i].value.trim();
+          const rank = kidRankInputs[i].value;
+          if (name && rank) {
+            kids.push({ name, rank });
+          }
+        }
+
+        // Upsert Record into Supabase `profile` table
+        const { error: dbError } = await supabaseClient
+          .from('profile')
+          .upsert({
+            id: user.id,
+            parent_name: parentName,
+            phone_number: phoneNumber,
+            other_guardian_name: otherGuardianName || null,
+            other_guardian_phone: otherGuardianPhone || null,
+            kids: kids
+          });
+
+        if (dbError) throw dbError;
+
+        // Success -> Redirect to Home
+        showAlert('Profile saved successfully! Redirecting...', 'info');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+
+      } catch (err) {
+        showAlert(err.message || 'Error saving profile. Please try again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Complete Onboarding';
+      }
+    }
+
+    function showAlert(msg, type) {
+      const alert = document.getElementById('alert-banner');
+      if (alert) {
+        alert.textContent = msg;
+        alert.className = `alert-banner ${type}`;
+      }
+    }
+
+    function clearAlert() {
+      const alert = document.getElementById('alert-banner');
+      if (alert) {
+        alert.className = 'alert-banner';
+        alert.textContent = '';
+      }
+    }
+  </script>
+
+</body>
+</html>
