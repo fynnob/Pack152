@@ -118,6 +118,66 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .color-info { background: var(--surface) !important; }
 .color-hex, .card p { color: var(--ink-muted) !important; }
 
+/* Order pages use calmer, roomier layouts because users read and compare data here. */
+.platform-order-page .container {
+  max-width: 1240px !important;
+  gap: 2.5rem !important;
+  margin-top: 2.75rem !important;
+}
+.platform-order-page .den-group {
+  margin-bottom: 1.75rem !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+.platform-order-page summary {
+  padding: 1.35rem 1.6rem !important;
+  font-size: 1.25rem !important;
+}
+.platform-order-page .items-grid {
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)) !important;
+  gap: 1.35rem !important;
+  padding: 1.5rem !important;
+}
+.platform-order-page .item-card {
+  padding: 1.2rem !important;
+  min-height: 390px;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.platform-order-page .item-image { height: 150px !important; margin-bottom: 1rem !important; }
+.platform-order-page .item-title { font-size: 1.05rem !important; line-height: 1.35 !important; margin-bottom: 0.5rem !important; }
+.platform-order-page .item-desc { font-size: 0.86rem !important; line-height: 1.5 !important; margin-bottom: 1rem !important; }
+.platform-order-page .item-price { margin-top: 1rem; margin-bottom: 0.85rem !important; }
+.platform-order-page .cart-card {
+  padding: 1.5rem !important;
+  top: 6rem;
+}
+.platform-order-page .cart-card h3 { padding-bottom: 0.85rem !important; margin-bottom: 1.25rem !important; }
+.platform-order-page .cart-item { padding: 0.65rem 0; margin-bottom: 0.35rem !important; line-height: 1.45; }
+
+.leader-order-page .container {
+  max-width: 1240px !important;
+  margin-top: 3rem !important;
+}
+.leader-order-page .header-bar { margin-bottom: 2.75rem !important; }
+.leader-order-page .tab-bar { margin-bottom: 2rem !important; padding: 0 0 0.75rem !important; }
+.leader-order-page .tab-btn { padding: 0.75rem 1.25rem !important; }
+.leader-order-page .data-card {
+  padding: 1.75rem !important;
+  margin-bottom: 2rem !important;
+}
+.leader-order-page .data-card h3 { margin-bottom: 1.35rem !important; }
+.leader-order-page table { font-size: 0.95rem !important; }
+.leader-order-page th { padding: 0.9rem 1rem !important; line-height: 1.35 !important; }
+.leader-order-page td { padding: 1.15rem 1rem !important; line-height: 1.5 !important; vertical-align: middle; }
+.leader-order-page td:first-child, .leader-order-page th:first-child { padding-left: 0.75rem !important; }
+.leader-order-page .badge-sku { white-space: nowrap; }
+
+@media (max-width: 868px) {
+  .platform-order-page .items-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important; }
+  .leader-order-page { overflow-x: hidden; }
+  .leader-order-page .data-card { overflow-x: auto; }
+  .leader-order-page table { min-width: 720px; }
+}
+
 .hero-container {
   background: linear-gradient(110deg, rgba(24, 48, 42, 0.88), rgba(31, 95, 139, 0.65)), url('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat !important;
   justify-content: center;
