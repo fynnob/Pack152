@@ -6,7 +6,7 @@ var supabaseClient = null;
 let userProfile = null;
 let existingOrder = null;
 let isEditingMode = false;
-let cart = {};
+let cart = {}; // Key: item_id + '_' + size
 let kidsDens = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -21,7 +21,6 @@ async function initOrdering() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  // 1. Fetch User Profile
   const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
   userProfile = profile;
   
@@ -32,10 +31,8 @@ async function initOrdering() {
     });
   }
 
-  // 2. Load Catalog First so DOM elements exist
   await loadCatalog();
 
-  // 3. Fetch Active Placed Order & Update UI
   const { data: orders } = await supabaseClient.from('orders').select('*').eq('user_id', user.id).eq('status', 'placed');
   if (orders && orders.length > 0) {
     existingOrder = orders[0];
@@ -70,7 +67,8 @@ window.enableEditOrder = function() {
   isEditingMode = true;
   cart = {};
   (existingOrder.items || []).forEach(i => {
-    cart[i.id] = { ...i };
+    const cartKey = `${i.id}_${i.size || 'default'}`;
+    cart[cartKey] = { ...i };
   });
   renderCart();
   updateCatalogButtonState();
@@ -133,43 +131,66 @@ async function loadCatalog() {
           <span style="font-size:0.85rem; color:#94a3b8;">▼</span>
         </summary>
         <div class="items-grid">
-          ${groups[den].map(item => `
-            <div class="item-card">
-              <div>
-                <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${window.escapeHtml(item.name)}" />
-                <div class="item-title">${window.escapeHtml(item.name)}</div>
-                <div class="item-desc">${window.escapeHtml(item.description || '')}</div>
+          ${groups[den].map(item => {
+            const hasSizes = Array.isArray(item.sizes) && item.sizes.length > 0;
+            return `
+              <div class="item-card">
+                <div>
+                  <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${window.escapeHtml(item.name)}" />
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.25rem;">
+                    <div class="item-title">${window.escapeHtml(item.name)}</div>
+                    ${item.sku ? `<span class="badge-sku">${window.escapeHtml(item.sku)}</span>` : ''}
+                  </div>
+                  ${item.description ? `<div class="item-desc">${window.escapeHtml(item.description)}</div>` : ''}
+                </div>
+                <div>
+                  <div class="item-price">${window.formatPriceDisplay(item.price)}</div>
+
+                  ${hasSizes ? `
+                    <div style="margin-bottom: 0.5rem;">
+                      <select id="size-select-${item.id}" class="size-dropdown">
+                        ${item.sizes.map(s => `<option value="${window.escapeHtml(s)}">Size: ${window.escapeHtml(s)}</option>`).join('')}
+                      </select>
+                    </div>
+                  ` : ''}
+
+                  <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku || ''}', ${hasSizes})">+ Add to Cart</button>
+                </div>
               </div>
-              <div>
-                <div class="item-price">${window.formatPriceDisplay(item.price)}</div>
-                <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price})">+ Add to Cart</button>
-              </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </details>
     `;
   }).join('');
 }
 
-window.addToCart = function(id, name, price) {
+window.addToCart = function(id, name, price, sku, hasSizes) {
   if (existingOrder && !isEditingMode) {
     window.showToast('You already have an active order. Click "Change Order" to edit.', 'error');
     return;
   }
 
-  if (!cart[id]) {
-    cart[id] = { id, name, price: Number(price), quantity: 0 };
+  let selectedSize = null;
+  if (hasSizes) {
+    const selectEl = document.getElementById(`size-select-${id}`);
+    if (selectEl) selectedSize = selectEl.value;
   }
-  cart[id].quantity += 1;
+
+  const cartKey = `${id}_${selectedSize || 'default'}`;
+
+  if (!cart[cartKey]) {
+    cart[cartKey] = { id, name, price: Number(price), sku, size: selectedSize, quantity: 0 };
+  }
+  cart[cartKey].quantity += 1;
   renderCart();
 };
 
-window.updateQty = function(id, delta) {
-  if (cart[id]) {
-    cart[id].quantity += delta;
-    if (cart[id].quantity <= 0) {
-      delete cart[id];
+window.updateQty = function(cartKey, delta) {
+  if (cart[cartKey]) {
+    cart[cartKey].quantity += delta;
+    if (cart[cartKey].quantity <= 0) {
+      delete cart[cartKey];
     }
   }
   renderCart();
@@ -181,7 +202,7 @@ function renderCart() {
   const totalEurEl = document.getElementById('cart-total-eur');
   const btn = document.getElementById('place-order-btn');
 
-  const itemsList = Object.values(cart);
+  const itemsList = Object.entries(cart);
   if (itemsList.length === 0) {
     container.innerHTML = '<p style="font-size: 0.875rem; color: #94a3b8;">Your cart is empty.</p>';
     totalUsdEl.textContent = '$0.00';
@@ -191,19 +212,22 @@ function renderCart() {
   }
 
   let totalUsd = 0;
-  container.innerHTML = itemsList.map(item => {
+  container.innerHTML = itemsList.map(([cartKey, item]) => {
     const subtotal = item.price * item.quantity;
     totalUsd += subtotal;
     return `
       <div class="cart-item">
         <div>
           <div style="font-weight:700;">${window.escapeHtml(item.name)}</div>
-          <div style="font-size:0.75rem; color:#94a3b8;">${window.formatPriceDisplay(item.price)} each</div>
+          <div style="font-size:0.75rem; color:#94a3b8;">
+            ${item.size ? `<span style="color:#60a5fa; font-weight:700;">Size: ${window.escapeHtml(item.size)}</span> | ` : ''}
+            ${window.formatPriceDisplay(item.price)}
+          </div>
         </div>
         <div class="qty-controls">
-          <button class="btn-qty" onclick="window.updateQty('${item.id}', -1)">-</button>
+          <button class="btn-qty" onclick="window.updateQty('${cartKey}', -1)">-</button>
           <span style="font-weight:700; width:18px; text-align:center;">${item.quantity}</span>
-          <button class="btn-qty" onclick="window.updateQty('${item.id}', 1)">+</button>
+          <button class="btn-qty" onclick="window.updateQty('${cartKey}', 1)">+</button>
         </div>
       </div>
     `;
