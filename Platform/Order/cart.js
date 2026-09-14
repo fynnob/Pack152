@@ -1,3 +1,4 @@
+// Cart Operations & Catalog Management
 const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
 var supabaseClient = null;
@@ -11,7 +12,7 @@ let kidsDens = [];
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.supabase) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    await initExchangeRate();
+    await window.initExchangeRate();
     await initOrdering();
   }
 });
@@ -20,26 +21,33 @@ async function initOrdering() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
+  // 1. Fetch User Profile
   const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
   userProfile = profile;
-  if (profile && profile.kids) {
-    kidsDens = profile.kids.map(k => (k.rank || '').trim().toLowerCase());
+  
+  if (profile && Array.isArray(profile.kids)) {
+    kidsDens = profile.kids.map(k => {
+      if (typeof k === 'object' && k !== null && k.rank) return String(k.rank).trim().toLowerCase();
+      return String(k || '').trim().toLowerCase();
+    });
   }
 
+  // 2. Load Catalog First so DOM elements exist
+  await loadCatalog();
+
+  // 3. Fetch Active Placed Order & Update UI
   const { data: orders } = await supabaseClient.from('orders').select('*').eq('user_id', user.id).eq('status', 'placed');
   if (orders && orders.length > 0) {
     existingOrder = orders[0];
     showOrderBanner(existingOrder);
   }
-
-  await loadCatalog();
 }
 
 function showOrderBanner(order) {
   const banner = document.getElementById('order-banner');
   const details = document.getElementById('order-banner-details');
-  const totalItems = order.items.reduce((sum, i) => sum + i.quantity, 0);
-  details.textContent = `Total Items: ${totalItems} | Total: ${formatPriceDisplay(order.total_amount)} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
+  const totalItems = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
+  details.textContent = `Total Items: ${totalItems} | Total: ${window.formatPriceDisplay(order.total_amount)} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
   banner.style.display = 'flex';
   updateCatalogButtonState();
 }
@@ -57,11 +65,11 @@ function updateCatalogButtonState() {
   }
 }
 
-function enableEditOrder() {
+window.enableEditOrder = function() {
   if (!existingOrder) return;
   isEditingMode = true;
   cart = {};
-  existingOrder.items.forEach(i => {
+  (existingOrder.items || []).forEach(i => {
     cart[i.id] = { ...i };
   });
   renderCart();
@@ -71,26 +79,26 @@ function enableEditOrder() {
   orderBtn.disabled = false;
   orderBtn.textContent = 'Update Existing Order';
 
-  showToast('Existing order loaded into cart. Make changes and click Update.', 'success');
-}
+  window.showToast('Existing order loaded into cart. Make changes and click Update.', 'success');
+};
 
-function confirmDeleteOrder() {
+window.confirmDeleteOrder = function() {
   if (!existingOrder) return;
-  showConfirmModal(
+  window.showConfirmModal(
     'Delete Order?',
     'Are you sure you want to delete your active order? This cannot be undone.',
     async () => {
       try {
         const { error } = await supabaseClient.from('orders').update({ status: 'cancelled' }).eq('id', existingOrder.id);
         if (error) throw error;
-        showToast('Order deleted successfully.', 'success');
+        window.showToast('Order deleted successfully.', 'success');
         setTimeout(() => window.location.reload(), 1000);
       } catch (err) {
-        showToast(err.message || 'Failed to delete order.', 'error');
+        window.showToast(err.message || 'Failed to delete order.', 'error');
       }
     }
   );
-}
+};
 
 async function loadCatalog() {
   const container = document.getElementById('catalog-container');
@@ -121,20 +129,20 @@ async function loadCatalog() {
     return `
       <details class="den-group ${isPriority ? 'priority' : ''}" ${isPriority ? 'open' : ''}>
         <summary>
-          <span>${escapeHtml(den)} Items ${isPriority ? '<span class="priority-badge">Your Scout\'s Den</span>' : ''}</span>
+          <span>${window.escapeHtml(den)} Items ${isPriority ? '<span class="priority-badge">Your Scout\'s Den</span>' : ''}</span>
           <span style="font-size:0.85rem; color:#94a3b8;">▼</span>
         </summary>
         <div class="items-grid">
           ${groups[den].map(item => `
             <div class="item-card">
               <div>
-                <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${escapeHtml(item.name)}" />
-                <div class="item-title">${escapeHtml(item.name)}</div>
-                <div class="item-desc">${escapeHtml(item.description || '')}</div>
+                <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${window.escapeHtml(item.name)}" />
+                <div class="item-title">${window.escapeHtml(item.name)}</div>
+                <div class="item-desc">${window.escapeHtml(item.description || '')}</div>
               </div>
               <div>
-                <div class="item-price">${formatPriceDisplay(item.price)}</div>
-                <button class="btn-add" onclick="addToCart('${item.id}', '${escapeHtml(item.name)}', ${item.price})">+ Add to Cart</button>
+                <div class="item-price">${window.formatPriceDisplay(item.price)}</div>
+                <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price})">+ Add to Cart</button>
               </div>
             </div>
           `).join('')}
@@ -142,13 +150,11 @@ async function loadCatalog() {
       </details>
     `;
   }).join('');
-
-  updateCatalogButtonState();
 }
 
-function addToCart(id, name, price) {
+window.addToCart = function(id, name, price) {
   if (existingOrder && !isEditingMode) {
-    showToast('You already have an active order. Click "Change Order" to edit.', 'error');
+    window.showToast('You already have an active order. Click "Change Order" to edit.', 'error');
     return;
   }
 
@@ -157,9 +163,9 @@ function addToCart(id, name, price) {
   }
   cart[id].quantity += 1;
   renderCart();
-}
+};
 
-function updateQty(id, delta) {
+window.updateQty = function(id, delta) {
   if (cart[id]) {
     cart[id].quantity += delta;
     if (cart[id].quantity <= 0) {
@@ -167,7 +173,7 @@ function updateQty(id, delta) {
     }
   }
   renderCart();
-}
+};
 
 function renderCart() {
   const container = document.getElementById('cart-items');
@@ -191,25 +197,25 @@ function renderCart() {
     return `
       <div class="cart-item">
         <div>
-          <div style="font-weight:700;">${escapeHtml(item.name)}</div>
-          <div style="font-size:0.75rem; color:#94a3b8;">${formatPriceDisplay(item.price)} each</div>
+          <div style="font-weight:700;">${window.escapeHtml(item.name)}</div>
+          <div style="font-size:0.75rem; color:#94a3b8;">${window.formatPriceDisplay(item.price)} each</div>
         </div>
         <div class="qty-controls">
-          <button class="btn-qty" onclick="updateQty('${item.id}', -1)">-</button>
+          <button class="btn-qty" onclick="window.updateQty('${item.id}', -1)">-</button>
           <span style="font-weight:700; width:18px; text-align:center;">${item.quantity}</span>
-          <button class="btn-qty" onclick="updateQty('${item.id}', 1)">+</button>
+          <button class="btn-qty" onclick="window.updateQty('${item.id}', 1)">+</button>
         </div>
       </div>
     `;
   }).join('');
 
-  const totalEur = Math.round(totalUsd * eurExchangeRate * 100) / 100;
+  const totalEur = Math.round(totalUsd * window.eurExchangeRate * 100) / 100;
   totalUsdEl.textContent = `$${totalUsd.toFixed(2)}`;
   totalEurEl.textContent = `€${totalEur.toFixed(2)}`;
   btn.disabled = false;
 }
 
-async function submitOrder() {
+window.submitOrder = async function() {
   const btn = document.getElementById('place-order-btn');
   btn.disabled = true;
   btn.textContent = 'Submitting...';
@@ -226,7 +232,7 @@ async function submitOrder() {
         updated_at: new Date().toISOString()
       }).eq('id', existingOrder.id);
       if (error) throw error;
-      showToast('Order updated successfully!', 'success');
+      window.showToast('Order updated successfully!', 'success');
     } else {
       const { error } = await supabaseClient.from('orders').insert({
         user_id: user.id,
@@ -236,13 +242,13 @@ async function submitOrder() {
         status: 'placed'
       });
       if (error) throw error;
-      showToast('Order placed successfully!', 'success');
+      window.showToast('Order placed successfully!', 'success');
     }
 
     setTimeout(() => window.location.reload(), 1200);
   } catch (err) {
-    showToast(err.message || 'Failed to submit order.', 'error');
+    window.showToast(err.message || 'Failed to submit order.', 'error');
     btn.disabled = false;
     btn.textContent = isEditingMode ? 'Update Existing Order' : 'Place Order';
   }
-}
+};

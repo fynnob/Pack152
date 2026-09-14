@@ -33,8 +33,8 @@
         <p id="order-banner-details" style="font-size: 0.875rem; color: #cbd5e1; margin-top: 0.25rem;"></p>
       </div>
       <div class="banner-actions">
-        <button class="btn-edit" onclick="enableEditOrder()">✏️ Change Order</button>
-        <button class="btn-delete" onclick="confirmDeleteOrder()">🗑️ Delete Order</button>
+        <button class="btn-edit" onclick="window.enableEditOrder()">✏️ Change Order</button>
+        <button class="btn-delete" onclick="window.confirmDeleteOrder()">🗑️ Delete Order</button>
       </div>
     </div>
 
@@ -59,7 +59,7 @@
           <span id="cart-total-eur">€0.00</span>
         </div>
       </div>
-      <button id="place-order-btn" class="btn-order" onclick="submitOrder()" disabled>Place Order</button>
+      <button id="place-order-btn" class="btn-order" onclick="window.submitOrder()" disabled>Place Order</button>
     </div>
   </main>
 
@@ -78,7 +78,7 @@
   <!-- Toast Notifications Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Modular Scripts -->
+  <!-- Modular Scripts loaded in strict dependency order -->
   <script src="./exchange.js"></script>
   <script src="./ui.js"></script>
   <script src="./cart.js"></script>
