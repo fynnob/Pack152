@@ -17,6 +17,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// Normalizes size object / string format cleanly
+window.normalizeSize = function(s, fallbackSku = '') {
+  if (!s) return null;
+  if (typeof s === 'object' && s !== null) {
+    return { size: String(s.size || s.name || ''), sku: String(s.sku || fallbackSku || '') };
+  }
+  if (typeof s === 'string') {
+    const trimmed = s.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return { size: String(parsed.size || ''), sku: String(parsed.sku || fallbackSku || '') };
+      } catch (e) {}
+    }
+    const parts = trimmed.split(':').map(p => p.trim());
+    if (parts.length > 1) {
+      return { size: parts[0], sku: parts[1] };
+    }
+    return { size: trimmed, sku: fallbackSku };
+  }
+  return null;
+};
+
 async function initOrdering() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
@@ -132,8 +155,10 @@ async function loadCatalog() {
         </summary>
         <div class="items-grid">
           ${groups[den].map(item => {
-            const hasSizes = Array.isArray(item.sizes) && item.sizes.length > 0;
-            const initialSku = hasSizes ? (item.sizes[0].sku || item.sku || 'N/A') : (item.sku || 'N/A');
+            const rawSizes = Array.isArray(item.sizes) ? item.sizes : [];
+            const sizes = rawSizes.map(s => window.normalizeSize(s, item.sku)).filter(Boolean);
+            const hasSizes = sizes.length > 0;
+            const initialSku = hasSizes ? (sizes[0].sku || 'N/A') : (item.sku || 'N/A');
 
             return `
               <div class="item-card">
@@ -151,9 +176,9 @@ async function loadCatalog() {
                   ${hasSizes ? `
                     <div style="margin-bottom: 0.5rem;">
                       <select id="size-select-${item.id}" class="size-dropdown" onchange="window.handleSizeChange('${item.id}', this)">
-                        ${item.sizes.map(s => `
-                          <option value="${window.escapeHtml(s.size)}" data-sku="${window.escapeHtml(s.sku || item.sku || '')}">
-                            Size: ${window.escapeHtml(s.size)} (${window.escapeHtml(s.sku || item.sku || 'N/A')})
+                        ${sizes.map(s => `
+                          <option value="${window.escapeHtml(s.size)}" data-sku="${window.escapeHtml(s.sku)}">
+                            Size: ${window.escapeHtml(s.size)} (${window.escapeHtml(s.sku)})
                           </option>
                         `).join('')}
                       </select>

@@ -279,9 +279,8 @@
       <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1.25rem;">Add Catalog Item</h3>
       <form onsubmit="handleAddItem(event)">
         <div class="form-group">
-          <label class="form-label">Base Item SKU</label>
+          <label class="form-label">Base Item SKU (Optional if sizes specified)</label>
           <input type="text" id="item-sku" class="form-control" placeholder="e.g. PACK-HB-BEAR" />
-          <div class="form-hint">Default SKU if item has no sizes.</div>
         </div>
 
         <div class="form-group">
@@ -306,8 +305,8 @@
 
         <div class="form-group">
           <label class="form-label">Size Variants & SKUs (Optional)</label>
-          <input type="text" id="item-sizes" class="form-control" placeholder="YS:PACK-TSH-YS, YM:PACK-TSH-YM, YL:PACK-TSH-YL" />
-          <div class="form-hint">Format: <code>Size:SKU, Size:SKU</code> (e.g. <code>S:TSH-S, M:TSH-M</code>). Leave blank if no sizes.</div>
+          <input type="text" id="item-sizes" class="form-control" placeholder='[{"sku": "634675", "size": "4T"}, {"sku": "660666", "size": "5T"}] OR 4T:634675, 5T:660666' />
+          <div class="form-hint">Accepts raw JSON array or <code>Size:SKU, Size:SKU</code> syntax.</div>
         </div>
 
         <div class="form-group">
@@ -338,12 +337,8 @@
     <div class="modal-card">
       <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem;">Bulk Add Catalog Items</h3>
       <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.75rem;">
-        Paste comma-separated rows. Drafts are automatically stored in browser storage until pushed.
+        Paste CSV rows or array. Drafts are automatically stored in browser storage.
       </p>
-
-      <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.5rem; font-family: monospace; line-height: 1.4;">
-        Format: BaseSKU, Name, Group, Price, SizeVariants(Size:SKU|Size:SKU), Description
-      </div>
 
       <form onsubmit="handleBulkSubmit(event)">
         <div class="form-group">
@@ -351,7 +346,7 @@
             id="bulk-text" 
             class="form-control" 
             rows="10" 
-            placeholder="PACK-TSHIRT, Pack T-Shirt, General, 15.00, YS:PACK-TSH-YS|YM:PACK-TSH-YM|YL:PACK-TSH-YL, Official Shirt&#10;PACK-HB-WOLF, Wolf Handbook, Wolf, 20.00, , Official Handbook"
+            placeholder='PACK-TSHIRT, Pack T-Shirt, General, 15.00, [{"sku": "634675", "size": "4T"}, {"sku": "660666", "size": "5T"}], Official Shirt'
             oninput="saveBulkDraft(this.value)"
           ></textarea>
         </div>
@@ -383,6 +378,28 @@
         await loadAllData();
       }
     });
+
+    function normalizeSize(s, fallbackSku = '') {
+      if (!s) return null;
+      if (typeof s === 'object' && s !== null) {
+        return { size: String(s.size || s.name || ''), sku: String(s.sku || fallbackSku || '') };
+      }
+      if (typeof s === 'string') {
+        const trimmed = s.trim();
+        if (trimmed.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            return { size: String(parsed.size || ''), sku: String(parsed.sku || fallbackSku || '') };
+          } catch (e) {}
+        }
+        const parts = trimmed.split(':').map(p => p.trim());
+        if (parts.length > 1) {
+          return { size: parts[0], sku: parts[1] };
+        }
+        return { size: trimmed, sku: fallbackSku };
+      }
+      return null;
+    }
 
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -452,14 +469,21 @@
       }
 
       body.innerHTML = rawItems.map(i => {
-        const hasSizes = Array.isArray(i.sizes) && i.sizes.length > 0;
+        const rawSizes = Array.isArray(i.sizes) ? i.sizes : [];
+        const sizes = rawSizes.map(s => normalizeSize(s, i.sku)).filter(Boolean);
+        const hasSizes = sizes.length > 0;
+
+        const skuDisplay = hasSizes 
+          ? '<em style="color:#64748b;">Per-size SKUs</em>' 
+          : `<span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span>`;
+
         const sizeDisplay = hasSizes 
-          ? i.sizes.map(s => `<strong>${escapeHtml(s.size)}</strong>: <span class="badge-sku">${escapeHtml(s.sku)}</span>`).join(', ')
+          ? sizes.map(s => `<strong>${escapeHtml(s.size)}</strong>: <span class="badge-sku">${escapeHtml(s.sku)}</span>`).join(', ')
           : '<em style="color:#64748b;">No sizes</em>';
 
         return `
           <tr>
-            <td><span class="badge-sku">${escapeHtml(i.sku || 'VARIOUS')}</span></td>
+            <td>${skuDisplay}</td>
             <td style="font-weight:700;">${escapeHtml(i.name)}</td>
             <td><span style="background:rgba(37,99,235,0.2); border:1px solid #2563eb; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem;">${escapeHtml(i.target_den)}</span></td>
             <td style="font-size:0.8rem; color:#cbd5e1;">${sizeDisplay}</td>
@@ -499,10 +523,19 @@
 
     function parseSizesInput(inputStr, baseSku) {
       if (!inputStr) return [];
-      return inputStr.split(/[,|]/).map(part => {
-        const [size, sku] = part.split(':').map(s => s.trim());
-        if (!size) return null;
-        return { size, sku: sku || `${baseSku || 'SKU'}-${size}` };
+      const trimmed = inputStr.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed.map(item => normalizeSize(item, baseSku)).filter(Boolean);
+          }
+        } catch (e) {}
+      }
+      return trimmed.split(/[,|]/).map(part => {
+        const trimmedPart = part.trim();
+        if (!trimmedPart) return null;
+        return normalizeSize(trimmedPart, baseSku);
       }).filter(Boolean);
     }
 
@@ -524,7 +557,7 @@
       const description = document.getElementById('item-desc').value.trim();
 
       const { error } = await supabaseClient.from('items').insert({
-        sku: sku || (sizes[0] ? sizes[0].sku : null),
+        sku: sku || null,
         name,
         target_den,
         sizes,
@@ -558,7 +591,7 @@
           const description = parts[5] || null;
 
           insertPayload.push({ 
-            sku: sku || (sizes[0] ? sizes[0].sku : null), 
+            sku: sku || null, 
             name, 
             target_den, 
             price, 
