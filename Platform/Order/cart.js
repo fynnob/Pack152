@@ -67,7 +67,8 @@ function showOrderBanner(order) {
   const banner = document.getElementById('order-banner');
   const details = document.getElementById('order-banner-details');
   const totalItems = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
-  details.textContent = `Total Items: ${totalItems} | Total: ${window.formatPriceDisplay(order.total_amount)} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
+  const refText = order.reference_code ? ` | Ref: ${order.reference_code}` : '';
+  details.textContent = `Total Items: ${totalItems} | Total: ${window.formatPriceDisplay(order.total_amount)}${refText} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
   banner.style.display = 'flex';
   updateCatalogButtonState();
 }
@@ -296,27 +297,45 @@ window.submitOrder = async function() {
     const itemsList = Object.values(cart);
     const totalAmount = itemsList.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
+    let orderId = null;
+
     if (existingOrder && isEditingMode) {
-      const { error } = await supabaseClient.from('orders').update({
+      const { data, error } = await supabaseClient.from('orders').update({
         items: itemsList,
         total_amount: totalAmount,
         updated_at: new Date().toISOString()
-      }).eq('id', existingOrder.id);
+      }).eq('id', existingOrder.id).select().single();
+
       if (error) throw error;
+      orderId = data.id;
       window.showToast('Order updated successfully!', 'success');
     } else {
-      const { error } = await supabaseClient.from('orders').insert({
+      const { data, error } = await supabaseClient.from('orders').insert({
         user_id: user.id,
         parent_name: userProfile ? userProfile.parent_name : 'Parent',
         items: itemsList,
         total_amount: totalAmount,
         status: 'placed'
-      });
+      }).select().single();
+
       if (error) throw error;
+      orderId = data.id;
       window.showToast('Order placed successfully!', 'success');
     }
 
-    setTimeout(() => window.location.reload(), 1200);
+    // Call Supabase Edge Function to generate 6-letter reference code & send email
+    try {
+      const { data: fnData, error: fnErr } = await supabaseClient.functions.invoke('send-order-email', {
+        body: { orderId: orderId, email: user.email }
+      });
+      if (!fnErr && fnData?.referenceCode) {
+        window.showToast(`Reference Code: ${fnData.referenceCode} - Payment email sent!`, 'success');
+      }
+    } catch (e) {
+      console.warn('Edge Function trigger warning:', e);
+    }
+
+    setTimeout(() => window.location.reload(), 1500);
   } catch (err) {
     window.showToast(err.message || 'Failed to submit order.', 'error');
     btn.disabled = false;
