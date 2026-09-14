@@ -167,9 +167,9 @@ async function loadCatalog() {
               <div class="item-card" onclick="window.openItemDetails('${item.id}')">
                 <div>
                   <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${window.escapeHtml(item.name)}" />
-                  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.25rem;">
+                  <div class="item-heading">
                     <div class="item-title">${window.escapeHtml(item.name)}</div>
-                    <span id="sku-badge-${item.id}" class="badge-sku">${window.escapeHtml(initialSku)}</span>
+                    <span id="sku-badge-${item.id}" class="badge-sku item-sku">${window.escapeHtml(initialSku)}</span>
                   </div>
                 </div>
                 <div>
