@@ -11,7 +11,7 @@
 
   <!-- Page Styles -->
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="/shared.css?v=3">
+  <link rel="stylesheet" href="/shared.css?v=4">
 </head>
 <body class="platform-order-page">
 
@@ -63,6 +63,22 @@
       <button id="place-order-btn" class="btn-order" onclick="window.submitOrder()" disabled>Place Order</button>
     </div>
   </main>
+
+  <div id="item-detail-modal" class="modal-overlay item-detail-modal">
+    <div class="modal-card item-detail-card">
+      <button class="item-detail-close" type="button" onclick="window.closeItemDetails()" aria-label="Close item details">×</button>
+      <img id="item-detail-image" class="item-detail-image" alt="" />
+      <div class="item-detail-content">
+        <span id="item-detail-den" class="item-detail-den"></span>
+        <h2 id="item-detail-title"></h2>
+        <p id="item-detail-description"></p>
+        <div class="item-detail-meta">
+          <strong id="item-detail-price"></strong>
+          <span id="item-detail-sku" class="badge-sku"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Custom Confirmation Modal -->
   <div id="custom-modal" class="modal-overlay">

@@ -131,6 +131,8 @@ async function loadCatalog() {
     return;
   }
 
+  window.catalogItems = Object.fromEntries(items.map(item => [item.id, item]));
+
   const groups = {};
   items.forEach(item => {
     const den = item.target_den || 'General';
@@ -162,14 +164,13 @@ async function loadCatalog() {
             const initialSku = hasSizes ? (sizes[0].sku || 'N/A') : (item.sku || 'N/A');
 
             return `
-              <div class="item-card">
+              <div class="item-card" onclick="window.openItemDetails('${item.id}')">
                 <div>
                   <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${window.escapeHtml(item.name)}" />
                   <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.25rem;">
                     <div class="item-title">${window.escapeHtml(item.name)}</div>
                     <span id="sku-badge-${item.id}" class="badge-sku">${window.escapeHtml(initialSku)}</span>
                   </div>
-                  ${item.description ? `<div class="item-desc">${window.escapeHtml(item.description)}</div>` : ''}
                 </div>
                 <div>
                   <div class="item-price">${window.formatPriceDisplay(item.price)}</div>
@@ -186,7 +187,7 @@ async function loadCatalog() {
                     </div>
                   ` : ''}
 
-                  <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku || ''}', ${hasSizes})">+ Add to Cart</button>
+                  <button class="btn-add" onclick="event.stopPropagation(); window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku || ''}', ${hasSizes})">+ Add to Cart</button>
                 </div>
               </div>
             `;
@@ -196,6 +197,25 @@ async function loadCatalog() {
     `;
   }).join('');
 }
+
+window.openItemDetails = function(itemId) {
+  const item = window.catalogItems && window.catalogItems[itemId];
+  if (!item) return;
+
+  const modal = document.getElementById('item-detail-modal');
+  document.getElementById('item-detail-image').src = item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80';
+  document.getElementById('item-detail-image').alt = item.name || 'Catalog item';
+  document.getElementById('item-detail-den').textContent = item.target_den || 'General';
+  document.getElementById('item-detail-title').textContent = item.name || 'Catalog item';
+  document.getElementById('item-detail-description').textContent = item.description || 'No additional description provided.';
+  document.getElementById('item-detail-price').textContent = window.formatPriceDisplay(item.price);
+  document.getElementById('item-detail-sku').textContent = item.sku || 'Per-size SKUs';
+  modal.style.display = 'flex';
+};
+
+window.closeItemDetails = function() {
+  document.getElementById('item-detail-modal').style.display = 'none';
+};
 
 window.handleSizeChange = function(itemId, selectEl) {
   const selectedOption = selectEl.options[selectEl.selectedIndex];
