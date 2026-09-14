@@ -177,7 +177,7 @@ async function loadCatalog() {
 
                   ${hasSizes ? `
                     <div style="margin-bottom: 0.5rem;">
-                      <select id="size-select-${item.id}" class="size-dropdown" onchange="window.handleSizeChange('${item.id}', this)">
+                      <select id="size-select-${item.id}" class="size-dropdown" onclick="event.stopPropagation()" onchange="window.handleSizeChange('${item.id}', this)">
                         ${sizes.map(s => `
                           <option value="${window.escapeHtml(s.size)}" data-sku="${window.escapeHtml(s.sku)}">
                             Size: ${window.escapeHtml(s.size)} (${window.escapeHtml(s.sku)})
@@ -209,7 +209,11 @@ window.openItemDetails = function(itemId) {
   document.getElementById('item-detail-title').textContent = item.name || 'Catalog item';
   document.getElementById('item-detail-description').textContent = item.description || 'No additional description provided.';
   document.getElementById('item-detail-price').textContent = window.formatPriceDisplay(item.price);
-  document.getElementById('item-detail-sku').textContent = item.sku || 'Per-size SKUs';
+  const sizes = (Array.isArray(item.sizes) ? item.sizes : []).map(size => window.normalizeSize(size, item.sku)).filter(Boolean);
+  document.getElementById('item-detail-sku').textContent = sizes.length ? 'Per-size SKUs' : (item.sku || 'N/A');
+  document.getElementById('item-detail-sizes').textContent = sizes.length
+    ? `Available sizes: ${sizes.map(size => `${size.size} (${size.sku})`).join(', ')}`
+    : 'No size variants';
   modal.style.display = 'flex';
 };
 
@@ -270,8 +274,12 @@ function renderCart() {
   const btn = document.getElementById('place-order-btn');
 
   const itemsList = Object.entries(cart);
+  const totalQuantity = itemsList.reduce((sum, [, item]) => sum + Number(item.quantity || 0), 0);
+  const countEl = document.getElementById('cart-count');
+  if (countEl) countEl.textContent = totalQuantity;
   if (itemsList.length === 0) {
     container.innerHTML = '<p style="font-size: 0.875rem; color: #94a3b8;">Your cart is empty.</p>';
+    renderCartModal();
     totalUsdEl.textContent = '$0.00';
     totalEurEl.textContent = '€0.00';
     btn.disabled = true;
@@ -301,11 +309,78 @@ function renderCart() {
     `;
   }).join('');
 
+  renderCartModal();
+
   const totalEur = Math.round(totalUsd * window.eurExchangeRate * 100) / 100;
   totalUsdEl.textContent = `$${totalUsd.toFixed(2)}`;
   totalEurEl.textContent = `€${totalEur.toFixed(2)}`;
   btn.disabled = false;
 }
+
+function renderCartModal() {
+  const modalItems = document.getElementById('cart-modal-items');
+  if (!modalItems) return;
+
+  const itemsList = Object.entries(cart);
+  if (itemsList.length === 0) {
+    modalItems.innerHTML = '<p class="cart-empty-message">Your cart is empty.</p>';
+    return;
+  }
+
+  modalItems.innerHTML = itemsList.map(([cartKey, item]) => {
+    const catalogItem = window.catalogItems && window.catalogItems[item.id];
+    const sizes = catalogItem && Array.isArray(catalogItem.sizes)
+      ? catalogItem.sizes.map(size => window.normalizeSize(size, catalogItem.sku)).filter(Boolean)
+      : [];
+    const sizeControl = sizes.length
+      ? `<select class="cart-size-select" onchange="window.changeCartSize('${cartKey}', this.value)">
+          ${sizes.map(size => `<option value="${window.escapeHtml(size.size)}" ${size.size === item.size ? 'selected' : ''}>${window.escapeHtml(size.size)}</option>`).join('')}
+        </select>`
+      : '<span class="cart-no-size">One size</span>';
+
+    return `<div class="cart-modal-row">
+      <div class="cart-modal-item-info">
+        <strong>${window.escapeHtml(item.name)}</strong>
+        <span class="badge-sku">${window.escapeHtml(item.sku || 'N/A')}</span>
+        ${sizeControl}
+      </div>
+      <div class="qty-controls">
+        <button class="btn-qty" onclick="window.updateQty('${cartKey}', -1)">-</button>
+        <span>${item.quantity}</span>
+        <button class="btn-qty" onclick="window.updateQty('${cartKey}', 1)">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openCartModal = function() {
+  renderCartModal();
+  document.getElementById('cart-modal').style.display = 'flex';
+};
+
+window.closeCartModal = function() {
+  document.getElementById('cart-modal').style.display = 'none';
+};
+
+window.changeCartSize = function(cartKey, newSize) {
+  const item = cart[cartKey];
+  if (!item || item.size === newSize) return;
+
+  const catalogItem = window.catalogItems && window.catalogItems[item.id];
+  const sizeOption = catalogItem && (catalogItem.sizes || [])
+    .map(size => window.normalizeSize(size, catalogItem.sku))
+    .find(size => size && size.size === newSize);
+  const nextKey = `${item.id}_${newSize || 'default'}`;
+
+  if (cart[nextKey]) {
+    cart[nextKey].quantity += item.quantity;
+    delete cart[cartKey];
+  } else {
+    cart[nextKey] = { ...item, size: newSize, sku: sizeOption ? sizeOption.sku : item.sku };
+    delete cart[cartKey];
+  }
+  renderCart();
+};
 
 window.submitOrder = async function() {
   const btn = document.getElementById('place-order-btn');

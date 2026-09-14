@@ -121,9 +121,10 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 /* Order pages use calmer, roomier layouts because users read and compare data here. */
 .platform-order-page .container {
   max-width: 1240px !important;
-  gap: 2.5rem !important;
-  margin-top: 2.75rem !important;
+  gap: 1.5rem !important;
+  margin-top: 2rem !important;
 }
+.platform-order-page #catalog-container { grid-column: 1 / -1; }
 .platform-order-page .den-group {
   margin-bottom: 1.75rem !important;
   border-color: rgba(255, 255, 255, 0.09) !important;
@@ -133,22 +134,34 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   font-size: 1.25rem !important;
 }
 .platform-order-page .items-grid {
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)) !important;
-  gap: 1.35rem !important;
-  padding: 1.5rem !important;
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)) !important;
+  gap: 1rem !important;
+  padding: 1.25rem !important;
 }
 .platform-order-page .item-card {
-  padding: 1.2rem !important;
-  min-height: 390px;
+  width: 100%;
+  height: 360px;
+  padding: 1rem !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
-.platform-order-page .item-image { height: 150px !important; margin-bottom: 1rem !important; }
-.platform-order-page .item-title { font-size: 1.05rem !important; line-height: 1.35 !important; margin-bottom: 0.5rem !important; }
+.platform-order-page .item-image { height: 170px !important; object-fit: contain !important; margin-bottom: 0.8rem !important; }
+.platform-order-page .item-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+  margin-bottom: 0.5rem !important;
+}
 .platform-order-page .item-desc { font-size: 0.86rem !important; line-height: 1.5 !important; margin-bottom: 1rem !important; }
 .platform-order-page .item-price { margin-top: 1rem; margin-bottom: 0.85rem !important; }
 .platform-order-page .cart-card {
+  grid-column: 1 / -1;
+  width: 100%;
   padding: 1.5rem !important;
-  top: 6rem;
+  position: relative;
+  top: auto;
 }
 .platform-order-page .cart-card h3 { padding-bottom: 0.85rem !important; margin-bottom: 1.25rem !important; }
 .platform-order-page .cart-item { padding: 0.65rem 0; margin-bottom: 0.35rem !important; line-height: 1.45; }
@@ -211,6 +224,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 }
 .platform-order-page .item-detail-content h2 { margin-bottom: 0.75rem; }
 .platform-order-page .item-detail-content p { line-height: 1.65; margin-bottom: 1.5rem; }
+.platform-order-page .item-detail-sizes { color: #cbd5e1; font-size: 0.88rem; line-height: 1.5; margin-top: 1rem; }
 .platform-order-page .item-detail-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .platform-order-page .item-detail-meta strong { color: #4ade80; font-size: 1.2rem; }
 .platform-order-page .item-detail-close {
@@ -228,15 +242,79 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   cursor: pointer;
 }
 .platform-order-page .item-detail-close:hover { background: #334155; }
+.platform-order-page .cart-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+.platform-order-page .cart-icon { font-size: 1.15rem; }
+.platform-order-page .cart-count {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.45rem;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.2rem;
+  border: 2px solid #1e293b;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #0f172a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 0.9rem;
+}
+.platform-order-page .cart-modal-card { position: relative; max-width: 560px; text-align: left; }
+.platform-order-page .cart-modal-card h2 { margin-bottom: 1rem; }
+.platform-order-page .cart-modal-items { max-height: 55vh; overflow-y: auto; padding-right: 0.25rem; }
+.platform-order-page .cart-modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.platform-order-page .cart-modal-item-info { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; min-width: 0; }
+.platform-order-page .cart-modal-item-info strong { flex-basis: 100%; }
+.platform-order-page .cart-size-select {
+  min-width: 7rem;
+  padding: 0.3rem 0.45rem;
+  background: #0f172a;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  color: #fff;
+}
+.platform-order-page .cart-no-size { color: #94a3b8; font-size: 0.8rem; }
+.platform-order-page .cart-modal-order { margin-top: 1.25rem; }
+.platform-order-page .cart-empty-message { color: #cbd5e1; padding: 1rem 0; }
 
 @media (max-width: 868px) {
-  .platform-order-page .items-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important; }
+  .platform-order-page .items-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
   .leader-order-page { overflow-x: hidden; }
   .leader-order-page .data-card { overflow-x: auto; }
   .leader-order-page table { min-width: 720px; }
   .platform-order-page .item-detail-card { grid-template-columns: 1fr; gap: 0.75rem; }
-  .platform-order-page .item-detail-image { height: 220px; }
+  .platform-order-page .item-detail-image { height: 260px; object-fit: contain !important; }
   .platform-order-page .item-detail-content { padding: 0.5rem; }
+  .platform-order-page .item-detail-content p { max-height: 9rem; overflow-y: auto; padding-right: 0.5rem; }
+  .platform-order-page .cart-modal-row { align-items: flex-start; }
+}
+
+@media (max-width: 680px) {
+  .platform-order-page .navbar .nav-actions { flex-direction: row; align-items: center; }
+  .platform-order-page .deadline-badge { font-size: 0.72rem; padding: 0.4rem 0.55rem; }
+  .platform-order-page .deadline-badge span { display: none; }
+  .platform-order-page .item-card { height: 345px; }
+  .platform-order-page .item-image { height: 165px !important; }
+  .platform-order-page .cart-modal-row { flex-direction: column; }
 }
 
 .hero-container {
