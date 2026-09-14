@@ -255,6 +255,29 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   color: #fff;
   cursor: pointer;
 }
+.platform-order-page .navbar .nav-actions {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 0.65rem !important;
+}
+.platform-order-page .deadline-badge {
+  background: transparent !important;
+  border: 0 !important;
+  color: #94a3b8 !important;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0;
+  white-space: nowrap;
+}
+.platform-order-page .deadline-badge span { color: #94a3b8 !important; }
+.platform-order-page .item-card .badge-sku {
+  max-width: 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .platform-order-page .cart-icon { font-size: 1.15rem; }
 .platform-order-page .cart-count {
   position: absolute;
@@ -295,6 +318,21 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .platform-order-page .cart-no-size { color: #94a3b8; font-size: 0.8rem; }
 .platform-order-page .cart-modal-order { margin-top: 1.25rem; }
 .platform-order-page .cart-empty-message { color: #cbd5e1; padding: 1rem 0; }
+.platform-order-page .size-picker-card { position: relative; max-width: 360px; text-align: left; }
+.platform-order-page .size-picker-card h2 { margin-bottom: 1.1rem; font-size: 1.25rem; }
+.platform-order-page .size-picker-options { display: grid; gap: 0.6rem; }
+.platform-order-page .size-picker-option {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.15);
+  color: #f8fafc;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.platform-order-page .size-picker-option:hover { background: #2563eb; border-color: #60a5fa; }
 
 @media (max-width: 868px) {
   .platform-order-page .items-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
@@ -309,9 +347,9 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 }
 
 @media (max-width: 680px) {
-  .platform-order-page .navbar .nav-actions { flex-direction: row; align-items: center; }
+  .platform-order-page .navbar .nav-actions { flex-direction: row !important; align-items: center !important; }
   .platform-order-page .deadline-badge { font-size: 0.72rem; padding: 0.4rem 0.55rem; }
-  .platform-order-page .deadline-badge span { display: none; }
+  .platform-order-page .deadline-badge span { display: inline; }
   .platform-order-page .item-card { height: 345px; }
   .platform-order-page .item-image { height: 165px !important; }
   .platform-order-page .cart-modal-row { flex-direction: column; }

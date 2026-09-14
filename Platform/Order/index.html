@@ -11,7 +11,7 @@
 
   <!-- Page Styles -->
   <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="/shared.css?v=5">
+  <link rel="stylesheet" href="/shared.css?v=6">
 </head>
 <body class="platform-order-page">
 
@@ -19,8 +19,7 @@
     <h1>Pack 152 — Gear & Orders</h1>
     <div class="nav-actions">
       <div class="deadline-badge">
-        <span>⏰ Order Window Closes:</span>
-        <strong id="closing-date">Oct 15, 2026</strong>
+        <span>Order until: Oct 15</span>
       </div>
       <button class="cart-trigger" type="button" onclick="window.openCartModal()" aria-label="Open cart">
         <span class="cart-icon">🛒</span><span id="cart-count" class="cart-count">0</span>
@@ -90,6 +89,15 @@
       <h2>Your Order Cart</h2>
       <div id="cart-modal-items" class="cart-modal-items"></div>
       <button class="btn-order cart-modal-order" type="button" onclick="window.closeCartModal(); document.getElementById('place-order-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });">Go to Place Order</button>
+    </div>
+  </div>
+
+  <div id="size-picker-modal" class="modal-overlay size-picker-modal">
+    <div class="modal-card size-picker-card">
+      <button class="item-detail-close" type="button" onclick="window.closeSizePicker()" aria-label="Close size picker">×</button>
+      <span class="item-detail-den">Choose a size</span>
+      <h2 id="size-picker-title">Select item size</h2>
+      <div id="size-picker-options" class="size-picker-options"></div>
     </div>
   </div>
 

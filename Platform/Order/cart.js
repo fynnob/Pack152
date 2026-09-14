@@ -161,7 +161,7 @@ async function loadCatalog() {
             const rawSizes = Array.isArray(item.sizes) ? item.sizes : [];
             const sizes = rawSizes.map(s => window.normalizeSize(s, item.sku)).filter(Boolean);
             const hasSizes = sizes.length > 0;
-            const initialSku = hasSizes ? (sizes[0].sku || 'N/A') : (item.sku || 'N/A');
+            const initialSku = hasSizes ? 'Per-size SKUs' : (item.sku || 'N/A');
 
             return `
               <div class="item-card" onclick="window.openItemDetails('${item.id}')">
@@ -174,18 +174,6 @@ async function loadCatalog() {
                 </div>
                 <div>
                   <div class="item-price">${window.formatPriceDisplay(item.price)}</div>
-
-                  ${hasSizes ? `
-                    <div style="margin-bottom: 0.5rem;">
-                      <select id="size-select-${item.id}" class="size-dropdown" onclick="event.stopPropagation()" onchange="window.handleSizeChange('${item.id}', this)">
-                        ${sizes.map(s => `
-                          <option value="${window.escapeHtml(s.size)}" data-sku="${window.escapeHtml(s.sku)}">
-                            Size: ${window.escapeHtml(s.size)} (${window.escapeHtml(s.sku)})
-                          </option>
-                        `).join('')}
-                      </select>
-                    </div>
-                  ` : ''}
 
                   <button class="btn-add" onclick="event.stopPropagation(); window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku || ''}', ${hasSizes})">+ Add to Cart</button>
                 </div>
@@ -221,33 +209,21 @@ window.closeItemDetails = function() {
   document.getElementById('item-detail-modal').style.display = 'none';
 };
 
-window.handleSizeChange = function(itemId, selectEl) {
-  const selectedOption = selectEl.options[selectEl.selectedIndex];
-  const sku = selectedOption.getAttribute('data-sku');
-  const badge = document.getElementById(`sku-badge-${itemId}`);
-  if (badge && sku) {
-    badge.textContent = sku;
-  }
-};
-
 window.addToCart = function(id, name, price, defaultSku, hasSizes) {
   if (existingOrder && !isEditingMode) {
     window.showToast('You already have an active order. Click "Change Order" to edit.', 'error');
     return;
   }
 
-  let selectedSize = null;
-  let activeSku = defaultSku;
-
   if (hasSizes) {
-    const selectEl = document.getElementById(`size-select-${id}`);
-    if (selectEl) {
-      selectedSize = selectEl.value;
-      const selectedOption = selectEl.options[selectEl.selectedIndex];
-      activeSku = selectedOption.getAttribute('data-sku') || defaultSku;
-    }
+    window.openSizePicker(id, name, price, defaultSku);
+    return;
   }
 
+  addCartItem(id, name, price, defaultSku, null);
+};
+
+function addCartItem(id, name, price, activeSku, selectedSize) {
   const cartKey = `${id}_${selectedSize || 'default'}`;
 
   if (!cart[cartKey]) {
@@ -255,6 +231,30 @@ window.addToCart = function(id, name, price, defaultSku, hasSizes) {
   }
   cart[cartKey].quantity += 1;
   renderCart();
+}
+
+window.openSizePicker = function(id, name, price, defaultSku) {
+  const item = window.catalogItems && window.catalogItems[id];
+  const sizes = item && Array.isArray(item.sizes)
+    ? item.sizes.map(size => window.normalizeSize(size, item.sku)).filter(Boolean)
+    : [];
+  const options = document.getElementById('size-picker-options');
+  document.getElementById('size-picker-title').textContent = name;
+  options.innerHTML = sizes.map(size => `
+    <button type="button" class="size-picker-option" onclick="window.chooseSize('${id}', '${window.escapeHtml(name)}', ${price}, '${window.escapeHtml(size.sku || defaultSku)}', '${window.escapeHtml(size.size)}')">
+      ${window.escapeHtml(size.size)}
+    </button>
+  `).join('');
+  document.getElementById('size-picker-modal').style.display = 'flex';
+};
+
+window.chooseSize = function(id, name, price, sku, size) {
+  addCartItem(id, name, price, sku, size);
+  window.closeSizePicker();
+};
+
+window.closeSizePicker = function() {
+  document.getElementById('size-picker-modal').style.display = 'none';
 };
 
 window.updateQty = function(cartKey, delta) {
