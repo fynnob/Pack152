@@ -133,13 +133,15 @@ async function loadCatalog() {
         <div class="items-grid">
           ${groups[den].map(item => {
             const hasSizes = Array.isArray(item.sizes) && item.sizes.length > 0;
+            const initialSku = hasSizes ? (item.sizes[0].sku || item.sku || 'N/A') : (item.sku || 'N/A');
+
             return `
               <div class="item-card">
                 <div>
                   <img src="${item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80'}" class="item-image" alt="${window.escapeHtml(item.name)}" />
                   <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.25rem;">
                     <div class="item-title">${window.escapeHtml(item.name)}</div>
-                    ${item.sku ? `<span class="badge-sku">${window.escapeHtml(item.sku)}</span>` : ''}
+                    <span id="sku-badge-${item.id}" class="badge-sku">${window.escapeHtml(initialSku)}</span>
                   </div>
                   ${item.description ? `<div class="item-desc">${window.escapeHtml(item.description)}</div>` : ''}
                 </div>
@@ -148,8 +150,12 @@ async function loadCatalog() {
 
                   ${hasSizes ? `
                     <div style="margin-bottom: 0.5rem;">
-                      <select id="size-select-${item.id}" class="size-dropdown">
-                        ${item.sizes.map(s => `<option value="${window.escapeHtml(s)}">Size: ${window.escapeHtml(s)}</option>`).join('')}
+                      <select id="size-select-${item.id}" class="size-dropdown" onchange="window.handleSizeChange('${item.id}', this)">
+                        ${item.sizes.map(s => `
+                          <option value="${window.escapeHtml(s.size)}" data-sku="${window.escapeHtml(s.sku || item.sku || '')}">
+                            Size: ${window.escapeHtml(s.size)} (${window.escapeHtml(s.sku || item.sku || 'N/A')})
+                          </option>
+                        `).join('')}
                       </select>
                     </div>
                   ` : ''}
@@ -165,22 +171,37 @@ async function loadCatalog() {
   }).join('');
 }
 
-window.addToCart = function(id, name, price, sku, hasSizes) {
+window.handleSizeChange = function(itemId, selectEl) {
+  const selectedOption = selectEl.options[selectEl.selectedIndex];
+  const sku = selectedOption.getAttribute('data-sku');
+  const badge = document.getElementById(`sku-badge-${itemId}`);
+  if (badge && sku) {
+    badge.textContent = sku;
+  }
+};
+
+window.addToCart = function(id, name, price, defaultSku, hasSizes) {
   if (existingOrder && !isEditingMode) {
     window.showToast('You already have an active order. Click "Change Order" to edit.', 'error');
     return;
   }
 
   let selectedSize = null;
+  let activeSku = defaultSku;
+
   if (hasSizes) {
     const selectEl = document.getElementById(`size-select-${id}`);
-    if (selectEl) selectedSize = selectEl.value;
+    if (selectEl) {
+      selectedSize = selectEl.value;
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      activeSku = selectedOption.getAttribute('data-sku') || defaultSku;
+    }
   }
 
   const cartKey = `${id}_${selectedSize || 'default'}`;
 
   if (!cart[cartKey]) {
-    cart[cartKey] = { id, name, price: Number(price), sku, size: selectedSize, quantity: 0 };
+    cart[cartKey] = { id, name, price: Number(price), sku: activeSku, size: selectedSize, quantity: 0 };
   }
   cart[cartKey].quantity += 1;
   renderCart();
@@ -220,7 +241,8 @@ function renderCart() {
         <div>
           <div style="font-weight:700;">${window.escapeHtml(item.name)}</div>
           <div style="font-size:0.75rem; color:#94a3b8;">
-            ${item.size ? `<span style="color:#60a5fa; font-weight:700;">Size: ${window.escapeHtml(item.size)}</span> | ` : ''}
+            <span class="badge-sku" style="font-size:0.65rem;">${window.escapeHtml(item.sku || 'N/A')}</span>
+            ${item.size ? `<span style="color:#60a5fa; font-weight:700; margin-left:0.25rem;">Size: ${window.escapeHtml(item.size)}</span> | ` : ' | '}
             ${window.formatPriceDisplay(item.price)}
           </div>
         </div>

@@ -133,7 +133,6 @@
 
     th { color: #94a3b8; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
 
-    /* Modal Styling */
     .modal {
       display: none;
       position: fixed;
@@ -150,7 +149,7 @@
       background: #1e293b;
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: var(--radius-lg);
-      max-width: 600px;
+      max-width: 620px;
       width: 100%;
       padding: 2rem;
       max-height: 90vh;
@@ -221,7 +220,7 @@
             <tr>
               <th>SKU</th>
               <th>Item Name</th>
-              <th>Size / Variant</th>
+              <th>Size</th>
               <th>Total Ordered</th>
               <th>Unit Price</th>
               <th>Gross Revenue</th>
@@ -258,10 +257,10 @@
         <table>
           <thead>
             <tr>
-              <th>SKU</th>
+              <th>Base / Variant SKUs</th>
               <th>Item Name</th>
               <th>Target Group</th>
-              <th>Available Sizes</th>
+              <th>Sizes & SKUs</th>
               <th>Price</th>
               <th>Action</th>
             </tr>
@@ -280,8 +279,9 @@
       <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1.25rem;">Add Catalog Item</h3>
       <form onsubmit="handleAddItem(event)">
         <div class="form-group">
-          <label class="form-label">SKU (Stock Keeping Unit)</label>
-          <input type="text" id="item-sku" class="form-control" placeholder="e.g. PACK-HB-BEAR" required />
+          <label class="form-label">Base Item SKU</label>
+          <input type="text" id="item-sku" class="form-control" placeholder="e.g. PACK-HB-BEAR" />
+          <div class="form-hint">Default SKU if item has no sizes.</div>
         </div>
 
         <div class="form-group">
@@ -290,7 +290,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Target Group / Den</label>
+          <label class="form-label">Target Group / Category</label>
           <select id="item-den-select" class="form-control" onchange="toggleCustomGroupInput(this.value)">
             <option value="General">General / All Dens</option>
             <option value="Lion">Lion (Kindergarten)</option>
@@ -305,9 +305,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Available Sizes (Optional)</label>
-          <input type="text" id="item-sizes" class="form-control" placeholder="YS, YM, YL, Adult S, Adult M, Adult L (Comma-separated)" />
-          <div class="form-hint">Leave blank if this item does not have size options.</div>
+          <label class="form-label">Size Variants & SKUs (Optional)</label>
+          <input type="text" id="item-sizes" class="form-control" placeholder="YS:PACK-TSH-YS, YM:PACK-TSH-YM, YL:PACK-TSH-YL" />
+          <div class="form-hint">Format: <code>Size:SKU, Size:SKU</code> (e.g. <code>S:TSH-S, M:TSH-M</code>). Leave blank if no sizes.</div>
         </div>
 
         <div class="form-group">
@@ -333,16 +333,16 @@
     </div>
   </div>
 
-  <!-- BULK IMPORT MODAL WITH BROWSER STORAGE DRAFTING -->
+  <!-- BULK IMPORT MODAL -->
   <div id="bulk-modal" class="modal">
     <div class="modal-card">
       <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem;">Bulk Add Catalog Items</h3>
-      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">
-        Paste comma-separated rows. Drafts are automatically stored in browser storage until pushed to the cloud.
+      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.75rem;">
+        Paste comma-separated rows. Drafts are automatically stored in browser storage until pushed.
       </p>
 
-      <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.5rem; font-family: monospace;">
-        Format per line: SKU, Name, Group, Price, Sizes (pipe-separated), Description
+      <div style="font-size: 0.75rem; color: #4ade80; margin-bottom: 0.5rem; font-family: monospace; line-height: 1.4;">
+        Format: BaseSKU, Name, Group, Price, SizeVariants(Size:SKU|Size:SKU), Description
       </div>
 
       <form onsubmit="handleBulkSubmit(event)">
@@ -351,7 +351,7 @@
             id="bulk-text" 
             class="form-control" 
             rows="10" 
-            placeholder="PACK-TSHIRT-Y, Pack T-Shirt, General, 15.00, YS|YM|YL, Official Pack Shirt&#10;PACK-HB-WOLF, Wolf Handbook, Wolf, 20.00, , Official Handbook"
+            placeholder="PACK-TSHIRT, Pack T-Shirt, General, 15.00, YS:PACK-TSH-YS|YM:PACK-TSH-YM|YL:PACK-TSH-YL, Official Shirt&#10;PACK-HB-WOLF, Wolf Handbook, Wolf, 20.00, , Official Handbook"
             oninput="saveBulkDraft(this.value)"
           ></textarea>
         </div>
@@ -412,11 +412,10 @@
         return;
       }
 
-      // Aggregate Quantities by Item SKU + Size
       const itemTotals = {};
       rawOrders.forEach(o => {
         (o.items || []).forEach(i => {
-          const key = `${i.sku || i.id}_${i.size || 'NO_SIZE'}`;
+          const key = `${i.sku || i.id}`;
           if (!itemTotals[key]) {
             itemTotals[key] = { sku: i.sku || 'N/A', name: i.name, size: i.size || 'N/A', quantity: 0, price: i.price };
           }
@@ -438,7 +437,7 @@
       ordersBody.innerHTML = rawOrders.map(o => `
         <tr>
           <td style="font-weight:700;">${escapeHtml(o.parent_name)}</td>
-          <td>${(o.items || []).map(i => `${escapeHtml(i.name)}${i.size ? ` [${escapeHtml(i.size)}]` : ''} (x${i.quantity})`).join(', ')}</td>
+          <td>${(o.items || []).map(i => `<span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span> ${escapeHtml(i.name)}${i.size ? ` [${escapeHtml(i.size)}]` : ''} (x${i.quantity})`).join(', ')}</td>
           <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)}</td>
           <td>${new Date(o.created_at).toLocaleDateString()}</td>
         </tr>
@@ -452,19 +451,25 @@
         return;
       }
 
-      body.innerHTML = rawItems.map(i => `
-        <tr>
-          <td><span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span></td>
-          <td style="font-weight:700;">${escapeHtml(i.name)}</td>
-          <td><span style="background:rgba(37,99,235,0.2); border:1px solid #2563eb; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem;">${escapeHtml(i.target_den)}</span></td>
-          <td style="font-size:0.8rem; color:#cbd5e1;">${(i.sizes || []).length > 0 ? i.sizes.map(s => escapeHtml(s)).join(', ') : '<em style="color:#64748b;">None</em>'}</td>
-          <td style="font-weight:700; color:#4ade80;">$${Number(i.price).toFixed(2)}</td>
-          <td><button style="background:transparent; border:none; color:#ef4444; font-weight:700; cursor:pointer;" onclick="deleteItem('${i.id}')">Delete</button></td>
-        </tr>
-      `).join('');
+      body.innerHTML = rawItems.map(i => {
+        const hasSizes = Array.isArray(i.sizes) && i.sizes.length > 0;
+        const sizeDisplay = hasSizes 
+          ? i.sizes.map(s => `<strong>${escapeHtml(s.size)}</strong>: <span class="badge-sku">${escapeHtml(s.sku)}</span>`).join(', ')
+          : '<em style="color:#64748b;">No sizes</em>';
+
+        return `
+          <tr>
+            <td><span class="badge-sku">${escapeHtml(i.sku || 'VARIOUS')}</span></td>
+            <td style="font-weight:700;">${escapeHtml(i.name)}</td>
+            <td><span style="background:rgba(37,99,235,0.2); border:1px solid #2563eb; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.75rem;">${escapeHtml(i.target_den)}</span></td>
+            <td style="font-size:0.8rem; color:#cbd5e1;">${sizeDisplay}</td>
+            <td style="font-weight:700; color:#4ade80;">$${Number(i.price).toFixed(2)}</td>
+            <td><button style="background:transparent; border:none; color:#ef4444; font-weight:700; cursor:pointer;" onclick="deleteItem('${i.id}')">Delete</button></td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    /* Modal Toggle & Group Helpers */
     function openAddModal() { document.getElementById('item-modal').style.display = 'flex'; }
     function closeAddModal() { document.getElementById('item-modal').style.display = 'none'; }
     function openBulkModal() { document.getElementById('bulk-modal').style.display = 'flex'; }
@@ -476,7 +481,6 @@
       if (val === '__NEW__') customInput.focus();
     }
 
-    /* Local Storage Draft Handling */
     function saveBulkDraft(val) {
       localStorage.setItem('pack152_bulk_item_draft', val);
       document.getElementById('draft-status').textContent = 'Draft Auto-Saved to Browser Storage';
@@ -484,9 +488,7 @@
 
     function loadBulkDraft() {
       const draft = localStorage.getItem('pack152_bulk_item_draft');
-      if (draft) {
-        document.getElementById('bulk-text').value = draft;
-      }
+      if (draft) document.getElementById('bulk-text').value = draft;
     }
 
     function clearBulkDraft() {
@@ -495,7 +497,15 @@
       document.getElementById('draft-status').textContent = 'Draft Cleared';
     }
 
-    /* Form Handlers */
+    function parseSizesInput(inputStr, baseSku) {
+      if (!inputStr) return [];
+      return inputStr.split(/[,|]/).map(part => {
+        const [size, sku] = part.split(':').map(s => s.trim());
+        if (!size) return null;
+        return { size, sku: sku || `${baseSku || 'SKU'}-${size}` };
+      }).filter(Boolean);
+    }
+
     async function handleAddItem(e) {
       e.preventDefault();
       const sku = document.getElementById('item-sku').value.trim();
@@ -507,13 +517,20 @@
       }
 
       const rawSizes = document.getElementById('item-sizes').value.trim();
-      const sizes = rawSizes ? rawSizes.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const sizes = parseSizesInput(rawSizes, sku);
+
       const price = parseFloat(document.getElementById('item-price').value);
       const image_url = document.getElementById('item-image').value.trim();
       const description = document.getElementById('item-desc').value.trim();
 
       const { error } = await supabaseClient.from('items').insert({
-        sku, name, target_den, sizes, price, image_url: image_url || null, description: description || null
+        sku: sku || (sizes[0] ? sizes[0].sku : null),
+        name,
+        target_den,
+        sizes,
+        price,
+        image_url: image_url || null,
+        description: description || null
       });
 
       if (error) { alert(error.message); return; }
@@ -537,10 +554,17 @@
           const name = parts[1];
           const target_den = parts[2] || 'General';
           const price = parseFloat(parts[3]) || 0;
-          const sizes = parts[4] ? parts[4].split('|').map(s => s.trim()).filter(Boolean) : [];
+          const sizes = parseSizesInput(parts[4], sku);
           const description = parts[5] || null;
 
-          insertPayload.push({ sku, name, target_den, price, sizes, description });
+          insertPayload.push({ 
+            sku: sku || (sizes[0] ? sizes[0].sku : null), 
+            name, 
+            target_den, 
+            price, 
+            sizes, 
+            description 
+          });
         }
       }
 
@@ -569,7 +593,7 @@
 
       let csv = '\uFEFFParent Name,Items Breakdown,Total Amount,Status,Date Placed\n';
       rawOrders.forEach(o => {
-        const itemStr = (o.items || []).map(i => `${i.sku ? `[${i.sku}] ` : ''}${i.name}${i.size ? ` (${i.size})` : ''} x${i.quantity}`).join('; ');
+        const itemStr = (o.items || []).map(i => `[${i.sku || 'N/A'}] ${i.name}${i.size ? ` (${i.size})` : ''} x${i.quantity}`).join('; ');
         csv += `"${o.parent_name.replace(/"/g, '""')}","${itemStr.replace(/"/g, '""')}",${o.total_amount},${o.status},"${new Date(o.created_at).toLocaleString()}"\n`;
       });
 
