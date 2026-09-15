@@ -268,7 +268,10 @@
       </div>
 
       <div class="data-card">
-        <h3 style="font-size:1.1rem; font-weight:800; color:#60a5fa; margin-bottom:1rem;">All Submitted Orders</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1rem;">
+          <h3 style="font-size:1.1rem; font-weight:800; color:#60a5fa;">All Submitted Orders</h3>
+          <button id="send-payment-reminders" type="button" class="btn-secondary" onclick="sendPaymentReminders()">Send email</button>
+        </div>
         <table>
           <thead>
             <tr>
@@ -936,6 +939,43 @@
     }
 
     await loadAllData();
+  }
+
+  async function sendPaymentReminders() {
+    const unpaidOrders = rawOrders.filter(order => order.payment_verified !== true);
+    if (unpaidOrders.length === 0) {
+      alert('There are no unpaid orders to email.');
+      return;
+    }
+
+    if (!confirm('Send email to all who haven\'t paid yet?')) return;
+
+    const button = document.getElementById('send-payment-reminders');
+    button.disabled = true;
+    button.textContent = 'Sending...';
+
+    let sentCount = 0;
+    let failedCount = 0;
+    await Promise.all(unpaidOrders.map(async order => {
+      try {
+        const { error } = await supabaseClient.functions.invoke('send-order-email', {
+          body: {
+            orderId: order.id,
+            email: order.email || order.parent_email || order.user_email,
+            targetStatus: 'Payment Reminder'
+          }
+        });
+        if (error) throw error;
+        sentCount += 1;
+      } catch (error) {
+        failedCount += 1;
+        console.error(`Payment reminder failed for order ${order.id}:`, error);
+      }
+    }));
+
+    button.disabled = false;
+    button.textContent = 'Send email';
+    alert(`Payment reminders sent: ${sentCount}. Failed: ${failedCount}.`);
   }
   </script>
 </body>
