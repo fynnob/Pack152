@@ -10,6 +10,13 @@ let cart = {}; // Key: item_id + '_' + size
 let kidsDens = [];
 const CUSTOM_ITEMS_STORAGE_KEY = 'pack152_custom_scoutshop_items';
 const MAX_CUSTOM_ITEMS = 20;
+const ACTIVE_ORDER_STATUSES = [
+  'placed',
+  'Ordered (on platform)',
+  'Payment Verified',
+  'Order Placed (inside scout shop)',
+  'Delivered'
+];
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.supabase) {
@@ -47,9 +54,13 @@ async function initOrdering() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  const { data: profile } = await supabaseClient.from('profile').select('*').eq('id', user.id).single();
+  const { data: profile } = await supabaseClient
+    .from('profile')
+    .select('*')
+    .eq('id', user.id)
+    .single();
   userProfile = profile;
-  
+
   if (profile && Array.isArray(profile.kids)) {
     kidsDens = profile.kids.map(k => {
       if (typeof k === 'object' && k !== null && k.rank) return String(k.rank).trim().toLowerCase();
@@ -59,53 +70,17 @@ async function initOrdering() {
 
   await loadCatalog();
 
-  const { data: orders } = await supabaseClient.from('orders').select('*').eq('user_id', user.id).eq('status', 'placed');
+  const { data: orders } = await supabaseClient
+    .from('orders')
+    .select('*')
+    .eq('user_id', user.id)
+    .in('status', ACTIVE_ORDER_STATUSES)
+    .order('created_at', { ascending: false });
   if (orders && orders.length > 0) {
     existingOrder = orders[0];
     showOrderBanner(existingOrder);
   }
 }
-
-function showOrderBanner(order) {
-  const banner = document.getElementById('order-banner');
-  const details = document.getElementById('order-banner-details');
-  const totalItems = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
-  const refText = order.reference_code ? ` | Ref: ${order.reference_code}` : '';
-  details.textContent = `Total Items: ${totalItems} | Total: ${window.formatPriceDisplay(order.total_amount)}${refText} (Placed: ${new Date(order.created_at).toLocaleDateString()})`;
-  banner.style.display = 'flex';
-  updateCatalogButtonState();
-}
-
-function updateCatalogButtonState() {
-  const addBtns = document.querySelectorAll('.btn-add');
-  addBtns.forEach(btn => {
-    btn.disabled = !!(existingOrder && !isEditingMode);
-  });
-
-  const orderBtn = document.getElementById('place-order-btn');
-  if (existingOrder && !isEditingMode) {
-    orderBtn.disabled = true;
-    orderBtn.textContent = 'Order Already Placed';
-  }
-}
-
-window.enableEditOrder = function() {
-  if (!existingOrder) return;
-  isEditingMode = true;
-  cart = {};
-  (existingOrder.items || []).forEach(i => {
-    const cartKey = `${i.id}_${i.size || 'default'}`;
-    cart[cartKey] = { ...i };
-  });
-  renderCart();
-  updateCatalogButtonState();
-
-  const orderBtn = document.getElementById('place-order-btn');
-  orderBtn.disabled = false;
-  orderBtn.textContent = 'Update Existing Order';
-
-  window.showToast('Existing order loaded into cart. Make changes and click Update.', 'success');
-};
 
 window.confirmDeleteOrder = function() {
   if (!existingOrder) return;
@@ -413,7 +388,7 @@ window.submitOrder = async function() {
         parent_name: userProfile ? userProfile.parent_name : 'Parent',
         items: itemsList,
         total_amount: totalAmount,
-        status: 'placed'
+        status: 'Ordered (on platform)'
       }).select().single();
 
       if (error) throw error;
@@ -518,4 +493,63 @@ window.fetchCustomScoutShopItem = async function() {
   } catch (err) {
     previewEl.innerHTML = `<p style="color:#ef4444; font-size:0.875rem;">${window.escapeHtml(err.message)}</p>`;
   }
+};
+
+function showOrderBanner(order) {
+  const banner = document.getElementById('order-banner');
+  const details = document.getElementById('order-banner-details');
+  const totalItems = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
+  const refText = order.reference_code ? ` | Ref: ${order.reference_code}` : '';
+
+  details.textContent = `Status: ${order.status || 'Ordered'} | Items: ${totalItems} | Total: ${window.formatPriceDisplay(order.total_amount)}${refText}`;
+  banner.style.display = 'flex';
+  updateCatalogButtonState();
+}
+
+function updateCatalogButtonState() {
+  const addBtns = document.querySelectorAll('.btn-add');
+  const isEditableOrder = existingOrder && ['placed', 'Ordered (on platform)'].includes(existingOrder.status);
+  const isLocked = existingOrder && !isEditableOrder;
+
+  addBtns.forEach(btn => {
+    btn.disabled = !!(existingOrder && (!isEditingMode || isLocked));
+  });
+
+  const orderBtn = document.getElementById('place-order-btn');
+  const bannerEditBtn = document.querySelector('.btn-edit');
+
+  if (existingOrder) {
+    if (isLocked) {
+      if (bannerEditBtn) bannerEditBtn.style.display = 'none';
+      orderBtn.disabled = true;
+      orderBtn.textContent = 'Order Locked (Payment Verified)';
+    } else if (!isEditingMode) {
+      orderBtn.disabled = true;
+      orderBtn.textContent = 'Order Already Placed';
+    }
+  }
+}
+
+window.enableEditOrder = function() {
+  if (!existingOrder) return;
+
+  if (existingOrder.status && !['placed', 'Ordered (on platform)'].includes(existingOrder.status)) {
+    window.showToast('Your order has been verified or processed. Please email pack152berlin@gmail.com to change your order.', 'error');
+    return;
+  }
+
+  isEditingMode = true;
+  cart = {};
+  (existingOrder.items || []).forEach(i => {
+    const cartKey = `${i.id}_${i.size || 'default'}`;
+    cart[cartKey] = { ...i };
+  });
+  renderCart();
+  updateCatalogButtonState();
+
+  const orderBtn = document.getElementById('place-order-btn');
+  orderBtn.disabled = false;
+  orderBtn.textContent = 'Update Existing Order';
+
+  window.showToast('Existing order loaded into cart. Make changes and click Update.', 'success');
 };

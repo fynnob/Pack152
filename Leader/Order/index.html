@@ -421,85 +421,6 @@
       renderCatalog();
     }
 
-    function renderOrdersAndSummary() {
-      const summaryBody = document.getElementById('aggregated-summary');
-      const ordersBody = document.getElementById('orders-list');
-
-      if (rawOrders.length === 0) {
-        summaryBody.innerHTML = '<tr><td colspan="6" style="color:#94a3b8;">No orders placed yet.</td></tr>';
-        ordersBody.innerHTML = '<tr><td colspan="5" style="color:#94a3b8;">No orders placed yet.</td></tr>';
-        return;
-      }
-
-      const itemTotals = {};
-      rawOrders.forEach(o => {
-        (o.items || []).forEach(i => {
-          const key = `${i.sku || i.id}`;
-          if (!itemTotals[key]) {
-            itemTotals[key] = { sku: i.sku || 'N/A', name: i.name, size: i.size || 'N/A', quantity: 0, price: i.price };
-          }
-          itemTotals[key].quantity += i.quantity;
-        });
-      });
-
-      summaryBody.innerHTML = Object.values(itemTotals).map(stat => `
-        <tr>
-          <td><span class="badge-sku">${escapeHtml(stat.sku)}</span></td>
-          <td style="font-weight:700;">${escapeHtml(stat.name)}</td>
-          <td>${escapeHtml(stat.size)}</td>
-          <td style="font-weight:700; color:#4ade80;">${stat.quantity}</td>
-          <td>$${stat.price.toFixed(2)}</td>
-          <td>$${(stat.quantity * stat.price).toFixed(2)}</td>
-        </tr>
-      `).join('');
-
-      ordersBody.innerHTML = rawOrders.map(o => {
-        const isVerified = o.payment_verified;
-        const refCode = o.reference_code || 'PENDING';
-
-        return `
-          <tr>
-            <td style="font-weight:700;">${escapeHtml(o.parent_name)}</td>
-            <td>
-              <span class="badge-sku" style="background:rgba(37,99,235,0.3); border-color:#3b82f6; font-weight:800; color:#93c5fd; padding:0.25rem 0.5rem; font-size:0.85rem;">
-                ${escapeHtml(refCode)} - Order
-              </span>
-            </td>
-            <td class="order-item-summary">
-              ${(o.items || []).map(i => `<span class="order-item-line"><span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span><strong>×${Number(i.quantity) || 0}</strong></span>`).join('')}
-            </td>
-            <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)}</td>
-            <td>
-              ${isVerified ? `
-                <span style="color:#4ade80; font-weight:800; font-size:0.85rem;">✓ Payment Verified</span>
-              ` : `
-                <button 
-                  style="background:#16a34a; color:#fff; border:none; padding:0.4rem 0.75rem; border-radius:6px; font-weight:700; cursor:pointer;"
-                  onclick="verifyPayment('${o.id}')"
-                >
-                  Verify Payment Received
-                </button>
-              `}
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    async function verifyPayment(orderId) {
-      const { error } = await supabaseClient
-        .from('orders')
-        .update({ payment_verified: true })
-        .eq('id', orderId);
-
-      if (error) {
-        alert(`Failed to verify payment: ${error.message}`);
-        return;
-      }
-
-      await loadAllData();
-    }
-
     function renderCatalog() {
       const body = document.getElementById('catalog-list');
       if (rawItems.length === 0) {
@@ -683,6 +604,127 @@
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     }
+
+  const STATUS_PIPELINE = [
+    'Ordered (on platform)',
+    'Payment Verified',
+    'Order Placed (inside scout shop)',
+    'Delivered'
+  ];
+
+  function getNextStatus(currentStatus) {
+    const index = STATUS_PIPELINE.indexOf(currentStatus);
+    if (index >= 0 && index < STATUS_PIPELINE.length - 1) {
+      return STATUS_PIPELINE[index + 1];
+    }
+    return null;
+  }
+
+  function renderOrdersAndSummary() {
+    const summaryBody = document.getElementById('aggregated-summary');
+    const ordersBody = document.getElementById('orders-list');
+
+    if (rawOrders.length === 0) {
+      summaryBody.innerHTML = '<tr><td colspan="6" style="color:#94a3b8;">No orders placed yet.</td></tr>';
+      ordersBody.innerHTML = '<tr><td colspan="5" style="color:#94a3b8;">No orders placed yet.</td></tr>';
+      return;
+    }
+
+    // Summary aggregation
+    const itemTotals = {};
+    rawOrders.forEach(o => {
+      (o.items || []).forEach(i => {
+        const key = `${i.sku || i.id}`;
+        if (!itemTotals[key]) {
+          itemTotals[key] = { sku: i.sku || 'N/A', name: i.name, size: i.size || 'N/A', quantity: 0, price: i.price };
+        }
+        itemTotals[key].quantity += i.quantity;
+      });
+    });
+
+    summaryBody.innerHTML = Object.values(itemTotals).map(stat => `
+      <tr>
+        <td><span class="badge-sku">${escapeHtml(stat.sku)}</span></td>
+        <td style="font-weight:700;">${escapeHtml(stat.name)}</td>
+        <td>${escapeHtml(stat.size)}</td>
+        <td style="font-weight:700; color:#4ade80;">${stat.quantity}</td>
+        <td>$${stat.price.toFixed(2)}</td>
+        <td>$${(stat.quantity * stat.price).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    // Orders list rendering with pipeline status action
+    ordersBody.innerHTML = rawOrders.map(o => {
+      const currentStatus = o.status === 'placed'
+        ? 'Ordered (on platform)'
+        : (o.status || 'Ordered (on platform)');
+      const nextStatus = getNextStatus(currentStatus);
+      const refCode = o.reference_code || 'PENDING';
+
+      let actionCell = '';
+      if (nextStatus) {
+        actionCell = `
+          <button
+            style="background:#2563eb; color:#fff; border:none; padding:0.45rem 0.8rem; border-radius:6px; font-weight:700; cursor:pointer;"
+            onclick="advanceOrderStatus('${o.id}', '${nextStatus}')"
+          >
+            Mark as: ${escapeHtml(nextStatus)}
+          </button>
+        `;
+      } else {
+        actionCell = `<span style="color:#4ade80; font-weight:800; font-size:0.85rem;">✓ Delivered</span>`;
+      }
+
+      return `
+        <tr>
+          <td style="font-weight:700;">${escapeHtml(o.parent_name)}</td>
+          <td>
+            <span class="badge-sku" style="background:rgba(37,99,235,0.3); border-color:#3b82f6; font-weight:800; color:#93c5fd; padding:0.25rem 0.5rem; font-size:0.85rem;">
+              ${escapeHtml(refCode)} - Order
+            </span>
+            <div style="font-size:0.75rem; color:#cbd5e1; margin-top:0.25rem;">
+              Status: <strong>${escapeHtml(currentStatus)}</strong>
+            </div>
+          </td>
+          <td style="font-size:0.85rem;">
+            ${(o.items || []).map(i => `<span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span> ${escapeHtml(i.name)}${i.size ? ` [${escapeHtml(i.size)}]` : ''} (x${i.quantity})`).join(', ')}
+          </td>
+          <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)}</td>
+          <td>${actionCell}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function advanceOrderStatus(orderId, nextStatus) {
+    if (!confirm(`Advance order status to "${nextStatus}"? This will notify the parent via email.`)) return;
+
+    // 1. Update status in Database
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({
+        status: nextStatus,
+        payment_verified: nextStatus !== 'Ordered (on platform)',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+
+    if (error) {
+      alert(`Failed to update status: ${error.message}`);
+      return;
+    }
+
+    // 2. Trigger status update email
+    try {
+      await supabaseClient.functions.invoke('send-order-email', {
+        body: { orderId: orderId, targetStatus: nextStatus }
+      });
+    } catch (e) {
+      console.warn('Status notification email warning:', e);
+    }
+
+    await loadAllData();
+  }
   </script>
 </body>
 </html>
