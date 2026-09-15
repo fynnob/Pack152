@@ -27,6 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+// Helper to check if an order's status locks it from modifications
+function isOrderLocked(order) {
+  if (!order || !order.status) return false;
+  const status = String(order.status).trim();
+  return !['placed', 'Ordered (on platform)'].includes(status);
+}
+
 // Normalizes size object / string format cleanly
 window.normalizeSize = function(s, fallbackSku = '') {
   if (!s) return null;
@@ -84,6 +91,12 @@ async function initOrdering() {
 
 window.confirmDeleteOrder = function() {
   if (!existingOrder) return;
+
+  if (isOrderLocked(existingOrder)) {
+    window.showToast('Your order has been processed and cannot be deleted. Please email pack152berlin@gmail.com.', 'error');
+    return;
+  }
+
   window.showConfirmModal(
     'Delete Order?',
     'Are you sure you want to delete your active order? This cannot be undone.',
@@ -188,6 +201,11 @@ window.closeItemDetails = function() {
 };
 
 window.addToCart = function(id, name, price, defaultSku, hasSizes) {
+  if (existingOrder && isOrderLocked(existingOrder)) {
+    window.showToast('Your order has been verified or processed. Please email pack152berlin@gmail.com to change your order.', 'error');
+    return;
+  }
+
   if (existingOrder && !isEditingMode) {
     window.showToast('You already have an active order. Click "Change Order" to edit.', 'error');
     return;
@@ -202,6 +220,8 @@ window.addToCart = function(id, name, price, defaultSku, hasSizes) {
 };
 
 function addCartItem(id, name, price, activeSku, selectedSize) {
+  if (existingOrder && isOrderLocked(existingOrder)) return;
+
   const cartKey = `${id}_${selectedSize || 'default'}`;
 
   if (!cart[cartKey]) {
@@ -236,6 +256,11 @@ window.closeSizePicker = function() {
 };
 
 window.updateQty = function(cartKey, delta) {
+  if (existingOrder && isOrderLocked(existingOrder)) {
+    window.showToast('Order is locked and cannot be modified.', 'error');
+    return;
+  }
+
   if (cart[cartKey]) {
     cart[cartKey].quantity += delta;
     if (cart[cartKey].quantity <= 0) {
@@ -292,7 +317,7 @@ function renderCart() {
   const totalEur = Math.round(totalUsd * window.eurExchangeRate * 100) / 100;
   totalUsdEl.textContent = `$${totalUsd.toFixed(2)}`;
   totalEurEl.textContent = `€${totalEur.toFixed(2)}`;
-  btn.disabled = false;
+  btn.disabled = !!(existingOrder && isOrderLocked(existingOrder));
 }
 
 function renderCartModal() {
@@ -311,7 +336,7 @@ function renderCartModal() {
       ? catalogItem.sizes.map(size => window.normalizeSize(size, catalogItem.sku)).filter(Boolean)
       : [];
     const sizeControl = sizes.length
-      ? `<select class="cart-size-select" onchange="window.changeCartSize('${cartKey}', this.value)">
+      ? `<select class="cart-size-select" onchange="window.changeCartSize('${cartKey}', this.value)" ${isOrderLocked(existingOrder) ? 'disabled' : ''}>
           ${sizes.map(size => `<option value="${window.escapeHtml(size.size)}" ${size.size === item.size ? 'selected' : ''}>${window.escapeHtml(size.size)}</option>`).join('')}
         </select>`
       : '<span class="cart-no-size">One size</span>';
@@ -323,9 +348,9 @@ function renderCartModal() {
         ${sizeControl}
       </div>
       <div class="qty-controls">
-        <button class="btn-qty" onclick="window.updateQty('${cartKey}', -1)">-</button>
+        <button class="btn-qty" onclick="window.updateQty('${cartKey}', -1)" ${isOrderLocked(existingOrder) ? 'disabled' : ''}>-</button>
         <span>${item.quantity}</span>
-        <button class="btn-qty" onclick="window.updateQty('${cartKey}', 1)">+</button>
+        <button class="btn-qty" onclick="window.updateQty('${cartKey}', 1)" ${isOrderLocked(existingOrder) ? 'disabled' : ''}>+</button>
       </div>
     </div>`;
   }).join('');
@@ -341,6 +366,8 @@ window.closeCartModal = function() {
 };
 
 window.changeCartSize = function(cartKey, newSize) {
+  if (existingOrder && isOrderLocked(existingOrder)) return;
+
   const item = cart[cartKey];
   if (!item || item.size === newSize) return;
 
@@ -362,6 +389,14 @@ window.changeCartSize = function(cartKey, newSize) {
 
 window.submitOrder = async function() {
   const btn = document.getElementById('place-order-btn');
+
+  if (existingOrder && isOrderLocked(existingOrder)) {
+    window.showToast('Your order has been verified or processed. Please email pack152berlin@gmail.com to change your order.', 'error');
+    btn.disabled = true;
+    btn.textContent = 'Order Locked (Payment Verified)';
+    return;
+  }
+
   btn.disabled = true;
   btn.textContent = 'Submitting...';
 
@@ -396,7 +431,6 @@ window.submitOrder = async function() {
       window.showToast('Order placed successfully!', 'success');
     }
 
-    // Call Supabase Edge Function to generate 6-letter reference code & send email
     try {
       const { data: fnData, error: fnErr } = await supabaseClient.functions.invoke('send-order-email', {
         body: { orderId: orderId, email: user.email }
@@ -457,6 +491,11 @@ function renderSavedCustomItems(items = getSavedCustomItems()) {
 }
 
 window.fetchCustomScoutShopItem = async function() {
+  if (existingOrder && isOrderLocked(existingOrder)) {
+    window.showToast('Your order is locked and cannot be updated.', 'error');
+    return;
+  }
+
   const inputEl = document.getElementById('custom-sku-input');
   const previewEl = document.getElementById('custom-item-preview');
   const sku = (inputEl.value || '').trim();
@@ -508,24 +547,31 @@ function showOrderBanner(order) {
 
 function updateCatalogButtonState() {
   const addBtns = document.querySelectorAll('.btn-add');
-  const isEditableOrder = existingOrder && ['placed', 'Ordered (on platform)'].includes(existingOrder.status);
-  const isLocked = existingOrder && !isEditableOrder;
+  const locked = isOrderLocked(existingOrder);
 
   addBtns.forEach(btn => {
-    btn.disabled = !!(existingOrder && (!isEditingMode || isLocked));
+    btn.disabled = !!(existingOrder && (!isEditingMode || locked));
   });
 
   const orderBtn = document.getElementById('place-order-btn');
   const bannerEditBtn = document.querySelector('.btn-edit');
+  const bannerDeleteBtn = document.querySelector('.btn-delete');
 
   if (existingOrder) {
-    if (isLocked) {
+    if (locked) {
       if (bannerEditBtn) bannerEditBtn.style.display = 'none';
-      orderBtn.disabled = true;
-      orderBtn.textContent = 'Order Locked (Payment Verified)';
+      if (bannerDeleteBtn) bannerDeleteBtn.style.display = 'none';
+      if (orderBtn) {
+        orderBtn.disabled = true;
+        orderBtn.textContent = 'Order Locked (Payment Verified)';
+      }
     } else if (!isEditingMode) {
-      orderBtn.disabled = true;
-      orderBtn.textContent = 'Order Already Placed';
+      if (bannerEditBtn) bannerEditBtn.style.display = 'inline-block';
+      if (bannerDeleteBtn) bannerDeleteBtn.style.display = 'inline-block';
+      if (orderBtn) {
+        orderBtn.disabled = true;
+        orderBtn.textContent = 'Order Already Placed';
+      }
     }
   }
 }
@@ -533,7 +579,7 @@ function updateCatalogButtonState() {
 window.enableEditOrder = function() {
   if (!existingOrder) return;
 
-  if (existingOrder.status && !['placed', 'Ordered (on platform)'].includes(existingOrder.status)) {
+  if (isOrderLocked(existingOrder)) {
     window.showToast('Your order has been verified or processed. Please email pack152berlin@gmail.com to change your order.', 'error');
     return;
   }
