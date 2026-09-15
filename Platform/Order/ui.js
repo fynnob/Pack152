@@ -9,7 +9,7 @@ window.showToast = function(message, type = 'success') {
   setTimeout(() => toast.remove(), 4000);
 };
 
-window.showConfirmModal = function(title, body, onConfirm) {
+window.showConfirmModal = function(title, body, onConfirm, confirmLabel = 'Confirm') {
   const overlay = document.getElementById('custom-modal');
   if (!overlay) return;
 
@@ -18,6 +18,7 @@ window.showConfirmModal = function(title, body, onConfirm) {
 
   const confirmBtn = document.getElementById('modal-confirm-btn');
   const cancelBtn = document.getElementById('modal-cancel-btn');
+  confirmBtn.textContent = confirmLabel;
 
   overlay.style.display = 'flex';
 

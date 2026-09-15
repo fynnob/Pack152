@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Helper to check if an order's status locks it from modifications
 function isOrderLocked(order) {
   if (!order || !order.status) return false;
+  if (order.payment_verified === true) return true;
   const status = String(order.status).trim();
   return !['placed', 'Ordered (on platform)'].includes(status);
 }
@@ -109,7 +110,8 @@ window.confirmDeleteOrder = function() {
       } catch (err) {
         window.showToast(err.message || 'Failed to delete order.', 'error');
       }
-    }
+    },
+    'Delete Order'
   );
 };
 
@@ -559,7 +561,7 @@ function updateCatalogButtonState() {
 
   if (existingOrder) {
     if (locked) {
-      if (bannerEditBtn) bannerEditBtn.style.display = 'none';
+      if (bannerEditBtn) bannerEditBtn.style.display = 'inline-block';
       if (bannerDeleteBtn) bannerDeleteBtn.style.display = 'none';
       if (orderBtn) {
         orderBtn.disabled = true;
@@ -580,7 +582,12 @@ window.enableEditOrder = function() {
   if (!existingOrder) return;
 
   if (isOrderLocked(existingOrder)) {
-    window.showToast('Your order has been verified or processed. Please email pack152berlin@gmail.com to change your order.', 'error');
+    window.showConfirmModal(
+      'Order Cannot Be Changed',
+      'Payment has been verified for this order. Please email pack152berlin@gmail.com to request a change.',
+      () => {},
+      'Close'
+    );
     return;
   }
 
