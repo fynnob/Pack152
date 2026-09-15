@@ -264,10 +264,10 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .leader-order-page .badge-sku { white-space: nowrap; }
 .leader-order-page .order-item-summary { min-width: 230px; }
 .leader-order-page .order-item-line {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.45rem;
-  margin: 0.2rem 0.65rem 0.2rem 0;
+  margin: 0.3rem 0;
   white-space: nowrap;
 }
 .leader-order-page .order-item-line strong { color: #4ade80; }
