@@ -8,12 +8,15 @@ let existingOrder = null;
 let isEditingMode = false;
 let cart = {}; // Key: item_id + '_' + size
 let kidsDens = [];
+const CUSTOM_ITEMS_STORAGE_KEY = 'pack152_custom_scoutshop_items';
+const MAX_CUSTOM_ITEMS = 20;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.supabase) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     await window.initExchangeRate();
     await initOrdering();
+    renderSavedCustomItems();
   }
 });
 
@@ -438,6 +441,46 @@ window.submitOrder = async function() {
   }
 };
 
+function getSavedCustomItems() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CUSTOM_ITEMS_STORAGE_KEY) || '[]');
+    return Array.isArray(saved) ? saved.filter(item => item && item.sku && item.name) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveCustomItem(item) {
+  const existingItems = getSavedCustomItems().filter(saved => String(saved.sku) !== String(item.sku));
+  const savedItems = [item, ...existingItems].slice(0, MAX_CUSTOM_ITEMS);
+  localStorage.setItem(CUSTOM_ITEMS_STORAGE_KEY, JSON.stringify(savedItems));
+  return savedItems;
+}
+
+function renderSavedCustomItems(items = getSavedCustomItems()) {
+  const previewEl = document.getElementById('custom-item-preview');
+  if (!previewEl) return;
+
+  if (items.length === 0) {
+    previewEl.innerHTML = '';
+    return;
+  }
+
+  previewEl.innerHTML = items.map(item => `
+    <div class="custom-item-preview-card">
+      <div class="custom-item-preview-heading">
+        <strong>${window.escapeHtml(item.name)}</strong>
+        <span class="badge-sku">${window.escapeHtml(item.sku)}</span>
+      </div>
+      ${item.description ? `<p class="custom-item-preview-description">${window.escapeHtml(item.description)}</p>` : ''}
+      <div class="custom-item-preview-footer">
+        <span class="custom-item-preview-price">$${Number(item.price || 0).toFixed(2)}</span>
+        <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${Number(item.price) || 0}, '${window.escapeHtml(item.sku)}', false)">+ Add to Cart</button>
+      </div>
+    </div>
+  `).join('');
+}
+
 window.fetchCustomScoutShopItem = async function() {
   const inputEl = document.getElementById('custom-sku-input');
   const previewEl = document.getElementById('custom-item-preview');
@@ -461,19 +504,15 @@ window.fetchCustomScoutShopItem = async function() {
 
     const item = data.item;
 
-    previewEl.innerHTML = `
-      <div class="custom-item-preview-card">
-        <div class="custom-item-preview-heading">
-          <strong>${window.escapeHtml(item.name)}</strong>
-          <span class="badge-sku">${window.escapeHtml(item.sku)}</span>
-        </div>
-        <p class="custom-item-preview-description">${window.escapeHtml(item.description)}</p>
-        <div class="custom-item-preview-footer">
-          <span class="custom-item-preview-price">$${item.price.toFixed(2)}</span>
-          <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku}', false)">+ Add to Cart</button>
-        </div>
-      </div>
-    `;
+    const savedItems = saveCustomItem({
+      id: item.id,
+      sku: String(item.sku),
+      name: String(item.name),
+      description: item.description ? String(item.description) : '',
+      price: Number(item.price) || 0
+    });
+    renderSavedCustomItems(savedItems);
+    inputEl.value = '';
 
     window.showToast('Item retrieved successfully!', 'success');
   } catch (err) {
