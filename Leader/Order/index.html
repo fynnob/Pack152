@@ -183,27 +183,6 @@
       border-radius: 4px;
     }
 
-    .order-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      margin-top: 0.45rem;
-      padding: 0.35rem 0.55rem;
-      background: rgba(234, 179, 8, 0.14);
-      border: 1px solid rgba(234, 179, 8, 0.55);
-      border-radius: 999px;
-      color: #fde68a;
-      font-size: 0.8rem;
-      line-height: 1.2;
-    }
-
-    .order-status-label {
-      color: #fef3c7;
-      font-weight: 700;
-    }
-
-    .order-status-value { font-weight: 800; }
-
     .status-action {
       display: inline-flex;
       flex-direction: column;
@@ -225,11 +204,17 @@
     .status-action:hover { background: #1d4ed8; }
     .status-action-label { font-size: 0.7rem; opacity: 0.8; }
     .status-action-value { font-size: 0.82rem; }
+    .verification-status {
+      margin-bottom: 0.45rem;
+      color: #cbd5e1;
+      font-size: 0.8rem;
+      line-height: 1.3;
+    }
+    .verification-status strong { color: #f8fafc; }
     .delivered-state { color: #4ade80; font-weight: 800; font-size: 0.85rem; }
 
     @media (max-width: 760px) {
       .status-action { min-width: 8.5rem; }
-      .order-status { align-items: flex-start; flex-direction: column; gap: 0.1rem; }
     }
   </style>
   <link rel="stylesheet" href="/shared.css?v=4">
@@ -710,16 +695,22 @@
       const nextStatus = getNextStatus(currentStatus);
       const refCode = o.reference_code || 'PENDING';
 
-      let actionCell = '';
+      const verificationStatus = `
+        <div class="verification-status">
+          Status: <strong>${escapeHtml(currentStatus)}</strong>
+        </div>
+      `;
+
+      let actionCell = verificationStatus;
       if (nextStatus) {
-        actionCell = `
+        actionCell += `
           <button class="status-action" onclick="advanceOrderStatus('${o.id}', '${nextStatus}')">
             <span class="status-action-label">Mark as</span>
             <span class="status-action-value">${escapeHtml(nextStatus)}</span>
           </button>
         `;
       } else {
-        actionCell = `<span class="delivered-state">✓ Delivered</span>`;
+        actionCell += `<span class="delivered-state">✓ Delivered</span>`;
       }
 
       return `
@@ -729,14 +720,8 @@
             <span class="badge-sku" style="background:rgba(37,99,235,0.3); border-color:#3b82f6; font-weight:800; color:#93c5fd; padding:0.25rem 0.5rem; font-size:0.85rem;">
               ${escapeHtml(refCode)} - Order
             </span>
-            <div class="order-status">
-              <span class="order-status-label">Status</span>
-              <strong class="order-status-value">${escapeHtml(currentStatus)}</strong>
-            </div>
           </td>
-          <td style="font-size:0.85rem;">
-            ${(o.items || []).map(i => `<span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span> ${escapeHtml(i.name)}${i.size ? ` [${escapeHtml(i.size)}]` : ''} (x${i.quantity})`).join(', ')}
-          </td>
+          <td style="font-size:0.85rem;">${(o.items || []).map(i => `${escapeHtml(i.sku || 'N/A')} x ${i.quantity}`).join(', ')}</td>
           <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)}</td>
           <td>${actionCell}</td>
         </tr>
