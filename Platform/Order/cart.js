@@ -437,3 +437,46 @@ window.submitOrder = async function() {
     btn.textContent = isEditingMode ? 'Update Existing Order' : 'Place Order';
   }
 };
+
+window.fetchCustomScoutShopItem = async function() {
+  const inputEl = document.getElementById('custom-sku-input');
+  const previewEl = document.getElementById('custom-item-preview');
+  const sku = (inputEl.value || '').trim();
+
+  if (!sku) {
+    window.showToast('Please enter a valid SKU', 'error');
+    return;
+  }
+
+  previewEl.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">Fetching product details from ScoutShop...</p>';
+
+  try {
+    const { data, error } = await supabaseClient.functions.invoke('fetch-scoutshop-item', {
+      body: { sku }
+    });
+
+    if (error || !data?.success) {
+      throw new Error(error?.message || data?.error || 'Product not found');
+    }
+
+    const item = data.item;
+
+    previewEl.innerHTML = `
+      <div class="item-card" style="max-width: 320px; height: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+          <strong style="color:#fff;">${window.escapeHtml(item.name)}</strong>
+          <span class="badge-sku">${window.escapeHtml(item.sku)}</span>
+        </div>
+        <p style="font-size:0.8rem; color:#cbd5e1; margin-bottom:0.75rem;">${window.escapeHtml(item.description)}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:#4ade80; font-weight:700;">$${item.price.toFixed(2)}</span>
+          <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku}', false)">+ Add to Cart</button>
+        </div>
+      </div>
+    `;
+
+    window.showToast('Item retrieved successfully!', 'success');
+  } catch (err) {
+    previewEl.innerHTML = `<p style="color:#ef4444; font-size:0.875rem;">${window.escapeHtml(err.message)}</p>`;
+  }
+};

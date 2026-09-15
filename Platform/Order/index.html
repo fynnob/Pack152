@@ -46,6 +46,35 @@
       <div style="color: #94a3b8;">Loading catalog & live exchange rates...</div>
     </div>
 
+    <!-- Custom ScoutShop SKU Item Lookup -->
+    <section class="data-card custom-item-section" style="margin-top: 2rem;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: #4ade80; margin-bottom: 0.5rem;">
+        🔎 Add Custom Item from ScoutShop
+      </h3>
+      <p style="font-size: 0.875rem; color: #cbd5e1; margin-bottom: 1rem;">
+        Looking for something not listed above? Enter any official ScoutShop item SKU to import its live details directly.
+      </p>
+
+      <div style="display: flex; gap: 0.75rem; max-width: 500px;">
+        <input 
+          type="text" 
+          id="custom-sku-input" 
+          class="form-control" 
+          placeholder="e.g. 660661" 
+          style="flex: 1;"
+        />
+        <button 
+          type="button" 
+          class="btn-action" 
+          onclick="window.fetchCustomScoutShopItem()"
+        >
+          Fetch & Add
+        </button>
+      </div>
+    
+      <div id="custom-item-preview" style="margin-top: 1.25rem;"></div>
+    </section>
+
     <!-- Shopping Cart Panel -->
     <div class="cart-card">
       <h3>Your Order Cart</h3>
