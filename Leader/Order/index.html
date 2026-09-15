@@ -868,7 +868,13 @@
         `).join('');
 
     // Orders list rendering with pipeline status action
-    ordersBody.innerHTML = rawOrders.map(o => {
+    const orderedOrders = [...rawOrders].sort((first, second) => {
+      const firstDelivered = String(first.status || '').trim() === 'Delivered';
+      const secondDelivered = String(second.status || '').trim() === 'Delivered';
+      return Number(firstDelivered) - Number(secondDelivered);
+    });
+
+    ordersBody.innerHTML = orderedOrders.map(o => {
       const currentStatus = o.status === 'placed'
         ? 'Ordered (on platform)'
         : (o.status || 'Ordered (on platform)');

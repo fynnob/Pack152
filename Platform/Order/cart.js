@@ -14,8 +14,7 @@ const ACTIVE_ORDER_STATUSES = [
   'placed',
   'Ordered (on platform)',
   'Payment Verified',
-  'Order Placed (inside scout shop)',
-  'Delivered'
+  'Order Placed (inside scout shop)'
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -222,9 +221,19 @@ function addCartItem(id, name, price, activeSku, selectedSize) {
   if (existingOrder && isOrderLocked(existingOrder)) return;
 
   const cartKey = `${id}_${selectedSize || 'default'}`;
+  const catalogItem = window.catalogItems && window.catalogItems[id];
 
   if (!cart[cartKey]) {
-    cart[cartKey] = { id, name, price: Number(price), sku: activeSku, size: selectedSize, quantity: 0 };
+    cart[cartKey] = {
+      id,
+      name,
+      price: Number(price),
+      sku: activeSku,
+      size: selectedSize,
+      description: catalogItem?.description || '',
+      image_url: catalogItem?.image_url || '',
+      quantity: 0
+    };
   }
   cart[cartKey].quantity += 1;
   renderCart();
