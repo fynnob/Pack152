@@ -27,12 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Helper to check if an order's status locks it from modifications
+// Payment verification is the authoritative lock for parent order changes.
 function isOrderLocked(order) {
-  if (!order || !order.status) return false;
-  if (order.payment_verified === true) return true;
-  const status = String(order.status).trim();
-  return !['placed', 'Ordered (on platform)'].includes(status);
+  return Boolean(order && order.payment_verified === true);
 }
 
 // Normalizes size object / string format cleanly
