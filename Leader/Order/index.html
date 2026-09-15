@@ -786,9 +786,15 @@
 
     async function copyExportForSheets() {
       if (!getSelectedExportFields().length) { alert('Choose at least one column to export.'); return; }
-      const csv = buildConfiguredCSV().replace(/^\uFEFF/, '');
+      const fields = getSelectedExportFields();
+      const rows = getExportRows();
+      const sheetsRows = [fields.map(field => EXPORT_FIELD_LABELS[field])];
+      rows.forEach(row => sheetsRows.push(fields.map(field => getExportValue(field, row))));
+      const sheetsText = sheetsRows
+        .map(values => values.map(value => String(value).replace(/[\t\r\n]/g, ' ')).join('\t'))
+        .join('\n');
       try {
-        await navigator.clipboard.writeText(csv);
+        await navigator.clipboard.writeText(sheetsText);
         alert('Copied. Open Google Sheets and paste into a blank sheet.');
       } catch (error) {
         alert('Copy was blocked by the browser. Download the CSV and import it into Google Sheets.');
