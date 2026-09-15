@@ -462,14 +462,14 @@ window.fetchCustomScoutShopItem = async function() {
     const item = data.item;
 
     previewEl.innerHTML = `
-      <div class="item-card" style="max-width: 320px; height: auto;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
-          <strong style="color:#fff;">${window.escapeHtml(item.name)}</strong>
+      <div class="custom-item-preview-card">
+        <div class="custom-item-preview-heading">
+          <strong>${window.escapeHtml(item.name)}</strong>
           <span class="badge-sku">${window.escapeHtml(item.sku)}</span>
         </div>
-        <p style="font-size:0.8rem; color:#cbd5e1; margin-bottom:0.75rem;">${window.escapeHtml(item.description)}</p>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="color:#4ade80; font-weight:700;">$${item.price.toFixed(2)}</span>
+        <p class="custom-item-preview-description">${window.escapeHtml(item.description)}</p>
+        <div class="custom-item-preview-footer">
+          <span class="custom-item-preview-price">$${item.price.toFixed(2)}</span>
           <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${item.price}, '${item.sku}', false)">+ Add to Cart</button>
         </div>
       </div>
