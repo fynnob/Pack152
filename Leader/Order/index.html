@@ -217,7 +217,7 @@
       .status-action { min-width: 8.5rem; }
     }
   </style>
-  <link rel="stylesheet" href="/shared.css?v=4">
+  <link rel="stylesheet" href="/shared.css?v=5">
 </head>
 <body class="leader-order-page">
 
@@ -308,6 +308,70 @@
       </div>
     </div>
   </main>
+
+  <div id="export-modal" class="modal export-modal">
+    <div class="modal-card export-modal-card">
+      <div class="export-modal-header">
+        <div>
+          <span class="export-eyebrow">Export Builder</span>
+          <h2>Choose your order data</h2>
+          <p>Build a file for Excel or copy it directly into Google Sheets.</p>
+        </div>
+        <button class="export-close" type="button" onclick="closeExportModal()" aria-label="Close export builder">×</button>
+      </div>
+
+      <div class="export-controls-grid">
+        <div class="export-control-group">
+          <h3>Rows</h3>
+          <label class="export-select-label" for="export-row-mode">Create one row per</label>
+          <select id="export-row-mode" class="form-control" onchange="updateExportPreview()">
+            <option value="order">Order</option>
+            <option value="item">Item in an order</option>
+          </select>
+        </div>
+
+        <div class="export-control-group">
+          <h3>Include orders where</h3>
+          <div class="export-status-options">
+            <label><input type="checkbox" class="export-status" value="unpaid" checked onchange="updateExportPreview()" /> Payment not verified</label>
+            <label><input type="checkbox" class="export-status" value="paid" checked onchange="updateExportPreview()" /> Payment verified</label>
+            <label><input type="checkbox" class="export-status" value="shop" checked onchange="updateExportPreview()" /> Bought from ScoutShop</label>
+            <label><input type="checkbox" class="export-status" value="delivered" checked onchange="updateExportPreview()" /> Delivered</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="export-fields-section">
+        <div class="export-fields-heading">
+          <div>
+            <h3>Columns</h3>
+            <p>Turn columns on or off, then use the arrows to set their order.</p>
+          </div>
+          <span id="export-preview-count" class="export-preview-count">0 rows</span>
+        </div>
+        <div id="export-fields" class="export-fields-list">
+          <div class="export-field-row" data-field="parent_name"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Parent name</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="email"><label><input type="checkbox" onchange="updateExportPreview()" /> Email</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="reference_code"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Payment reason code</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="sku"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Item SKU</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="item_name"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Item name</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="size"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Size</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="quantity"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Quantity</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="total_amount"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Total cost</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="status"><label><input type="checkbox" onchange="updateExportPreview()" /> Order status</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="created_at"><label><input type="checkbox" onchange="updateExportPreview()" /> Date placed</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+        </div>
+      </div>
+
+      <p class="export-note">CSV files open directly in Microsoft Excel. For Google Sheets, use Copy for Google Sheets and paste into a blank sheet.</p>
+      <div class="export-actions">
+        <button type="button" class="btn-back" onclick="closeExportModal()">Cancel</button>
+        <button type="button" class="btn-secondary" onclick="copyExportForSheets()">Copy for Google Sheets</button>
+        <button type="button" class="btn-secondary" onclick="openGoogleSheets()">Open Google Sheets</button>
+        <button type="button" class="btn-action" onclick="downloadConfiguredCSV()">Download CSV</button>
+      </div>
+    </div>
+  </div>
 
   <!-- SINGLE ITEM MODAL -->
   <div id="item-modal" class="modal">
@@ -615,23 +679,126 @@
       await loadAllData();
     }
 
+    const EXPORT_FIELD_LABELS = {
+      parent_name: 'Parent name', email: 'Email', reference_code: 'Payment reason code',
+      sku: 'Item SKU', item_name: 'Item name', size: 'Size', quantity: 'Quantity',
+      total_amount: 'Total cost', status: 'Order status', created_at: 'Date placed'
+    };
+
     function exportToCSV() {
       if (rawOrders.length === 0) { alert('No orders to export.'); return; }
+      document.getElementById('export-modal').style.display = 'flex';
+      updateExportPreview();
+    }
 
-      let csv = '\uFEFFParent Name,Reference Code,Items Breakdown,Total Amount,Status,Payment Verified,Date Placed\n';
-      rawOrders.forEach(o => {
-        const itemStr = (o.items || []).map(i => `[${i.sku || 'N/A'}] ${i.name}${i.size ? ` (${i.size})` : ''} x${i.quantity}`).join('; ');
-        csv += `"${o.parent_name.replace(/"/g, '""')}","${(o.reference_code || '')} - Order","${itemStr.replace(/"/g, '""')}",${o.total_amount},${o.status},${o.payment_verified ? 'YES' : 'NO'},"${new Date(o.created_at).toLocaleString()}"\n`;
+    function closeExportModal() {
+      document.getElementById('export-modal').style.display = 'none';
+    }
+
+    function moveExportField(button, direction) {
+      const row = button.closest('.export-field-row');
+      const list = document.getElementById('export-fields');
+      const sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+      if (!sibling) return;
+      if (direction < 0) list.insertBefore(row, sibling);
+      else list.insertBefore(sibling, row);
+      updateExportPreview();
+    }
+
+    function getExportStatuses() {
+      return new Set(Array.from(document.querySelectorAll('.export-status:checked')).map(input => input.value));
+    }
+
+    function orderMatchesExportFilter(order) {
+      const status = String(order.status || '').trim();
+      const statuses = getExportStatuses();
+      const isPaid = order.payment_verified === true;
+      const isShopBought = status === 'Order Placed (inside scout shop)';
+      const isDelivered = status === 'Delivered';
+      return (statuses.has('unpaid') && !isPaid)
+        || (statuses.has('paid') && isPaid)
+        || (statuses.has('shop') && isShopBought)
+        || (statuses.has('delivered') && isDelivered);
+    }
+
+    function getSelectedExportFields() {
+      return Array.from(document.querySelectorAll('.export-field-row'))
+        .filter(row => row.querySelector('input').checked)
+        .map(row => row.dataset.field);
+    }
+
+    function getExportRows() {
+      const rowMode = document.getElementById('export-row-mode').value;
+      const filteredOrders = rawOrders.filter(orderMatchesExportFilter);
+      const rows = [];
+      filteredOrders.forEach(order => {
+        const items = Array.isArray(order.items) && order.items.length ? order.items : [{}];
+        const sourceItems = rowMode === 'item' ? items : [items];
+        sourceItems.forEach(itemOrItems => {
+          rows.push({ order, item: rowMode === 'item' ? itemOrItems : null, items: rowMode === 'order' ? itemOrItems : null });
+        });
       });
+      return rows;
+    }
 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    function getExportValue(field, row) {
+      const order = row.order;
+      const item = row.item;
+      if (field === 'parent_name') return order.parent_name || '';
+      if (field === 'email') return order.email || order.parent_email || order.user_email || '';
+      if (field === 'reference_code') return order.reference_code ? `${order.reference_code} - Order` : '';
+      if (field === 'sku') return item ? (item.sku || 'N/A') : (row.items || []).map(value => value.sku || 'N/A').join(' | ');
+      if (field === 'item_name') return item ? (item.name || '') : (row.items || []).map(value => value.name || '').join(' | ');
+      if (field === 'size') return item ? (item.size || '') : (row.items || []).map(value => value.size || '').join(' | ');
+      if (field === 'quantity') return item ? (item.quantity || 0) : (row.items || []).reduce((sum, value) => sum + Number(value.quantity || 0), 0);
+      if (field === 'total_amount') return Number(order.total_amount || 0).toFixed(2);
+      if (field === 'status') return order.status || '';
+      if (field === 'created_at') return order.created_at ? new Date(order.created_at).toLocaleString() : '';
+      return '';
+    }
+
+    function buildConfiguredCSV() {
+      const fields = getSelectedExportFields();
+      const rows = getExportRows();
+      const csvRows = [fields.map(field => EXPORT_FIELD_LABELS[field])];
+      rows.forEach(row => csvRows.push(fields.map(field => getExportValue(field, row))));
+      return '\uFEFF' + csvRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n') + '\n';
+    }
+
+    function updateExportPreview() {
+      const count = getExportRows().length;
+      const selected = getSelectedExportFields().length;
+      document.getElementById('export-preview-count').textContent = `${count} rows · ${selected} columns`;
+    }
+
+    function downloadConfiguredCSV() {
+      if (!getSelectedExportFields().length) { alert('Choose at least one column to export.'); return; }
+      const blob = new Blob([buildConfiguredCSV()], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `Pack152_Orders_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.href = url;
+      link.download = `Pack152_Orders_${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    async function copyExportForSheets() {
+      if (!getSelectedExportFields().length) { alert('Choose at least one column to export.'); return; }
+      const csv = buildConfiguredCSV().replace(/^\uFEFF/, '');
+      try {
+        await navigator.clipboard.writeText(csv);
+        alert('Copied. Open Google Sheets and paste into a blank sheet.');
+      } catch (error) {
+        alert('Copy was blocked by the browser. Download the CSV and import it into Google Sheets.');
+      }
+    }
+
+    function openGoogleSheets() {
+      if (!getSelectedExportFields().length) { alert('Choose at least one column to export.'); return; }
+      copyExportForSheets();
+      window.open('https://sheets.new', '_blank', 'noopener');
     }
 
     function escapeHtml(str) {
