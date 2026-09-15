@@ -363,11 +363,10 @@
         </div>
       </div>
 
-      <p class="export-note">CSV files open directly in Microsoft Excel. For Google Sheets, use Copy for Google Sheets and paste into a blank sheet.</p>
+      <p class="export-note">CSV files open directly in Microsoft Excel. For Google Sheets, copy the order data and open a blank sheet.</p>
       <div class="export-actions">
         <button type="button" class="btn-back" onclick="closeExportModal()">Cancel</button>
-        <button type="button" class="btn-secondary" onclick="copyExportForSheets()">Copy for Google Sheets</button>
-        <button type="button" class="btn-secondary" onclick="openGoogleSheets()">Open Google Sheets</button>
+        <button type="button" class="btn-secondary" onclick="copyAndOpenGoogleSheets()">Copy &amp; Open Google Sheets</button>
         <button type="button" class="btn-action" onclick="downloadConfiguredCSV()">Download CSV</button>
       </div>
     </div>
@@ -784,7 +783,7 @@
       URL.revokeObjectURL(url);
     }
 
-    async function copyExportForSheets() {
+    async function copyAndOpenGoogleSheets() {
       if (!getSelectedExportFields().length) { alert('Choose at least one column to export.'); return; }
       const fields = getSelectedExportFields();
       const rows = getExportRows();
@@ -795,16 +794,11 @@
         .join('\n');
       try {
         await navigator.clipboard.writeText(sheetsText);
-        alert('Copied. Open Google Sheets and paste into a blank sheet.');
+        alert('Copied. Press Ctrl + C if needed, then click OK to open Google Sheets.');
+        window.open('https://sheets.new', '_blank', 'noopener');
       } catch (error) {
         alert('Copy was blocked by the browser. Download the CSV and import it into Google Sheets.');
       }
-    }
-
-    function openGoogleSheets() {
-      if (!getSelectedExportFields().length) { alert('Choose at least one column to export.'); return; }
-      copyExportForSheets();
-      window.open('https://sheets.new', '_blank', 'noopener');
     }
 
     function escapeHtml(str) {
