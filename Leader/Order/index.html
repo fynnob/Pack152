@@ -182,6 +182,55 @@
       padding: 0.15rem 0.4rem;
       border-radius: 4px;
     }
+
+    .order-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.45rem;
+      padding: 0.35rem 0.55rem;
+      background: rgba(234, 179, 8, 0.14);
+      border: 1px solid rgba(234, 179, 8, 0.55);
+      border-radius: 999px;
+      color: #fde68a;
+      font-size: 0.8rem;
+      line-height: 1.2;
+    }
+
+    .order-status-label {
+      color: #fef3c7;
+      font-weight: 700;
+    }
+
+    .order-status-value { font-weight: 800; }
+
+    .status-action {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.1rem;
+      min-width: 9.5rem;
+      max-width: 11rem;
+      padding: 0.5rem 0.7rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .status-action:hover { background: #1d4ed8; }
+    .status-action-label { font-size: 0.7rem; opacity: 0.8; }
+    .status-action-value { font-size: 0.82rem; }
+    .delivered-state { color: #4ade80; font-weight: 800; font-size: 0.85rem; }
+
+    @media (max-width: 760px) {
+      .status-action { min-width: 8.5rem; }
+      .order-status { align-items: flex-start; flex-direction: column; gap: 0.1rem; }
+    }
   </style>
   <link rel="stylesheet" href="/shared.css?v=4">
 </head>
@@ -664,15 +713,13 @@
       let actionCell = '';
       if (nextStatus) {
         actionCell = `
-          <button
-            style="background:#2563eb; color:#fff; border:none; padding:0.45rem 0.8rem; border-radius:6px; font-weight:700; cursor:pointer;"
-            onclick="advanceOrderStatus('${o.id}', '${nextStatus}')"
-          >
-            Mark as: ${escapeHtml(nextStatus)}
+          <button class="status-action" onclick="advanceOrderStatus('${o.id}', '${nextStatus}')">
+            <span class="status-action-label">Mark as</span>
+            <span class="status-action-value">${escapeHtml(nextStatus)}</span>
           </button>
         `;
       } else {
-        actionCell = `<span style="color:#4ade80; font-weight:800; font-size:0.85rem;">✓ Delivered</span>`;
+        actionCell = `<span class="delivered-state">✓ Delivered</span>`;
       }
 
       return `
@@ -682,8 +729,9 @@
             <span class="badge-sku" style="background:rgba(37,99,235,0.3); border-color:#3b82f6; font-weight:800; color:#93c5fd; padding:0.25rem 0.5rem; font-size:0.85rem;">
               ${escapeHtml(refCode)} - Order
             </span>
-            <div style="font-size:0.75rem; color:#cbd5e1; margin-top:0.25rem;">
-              Status: <strong>${escapeHtml(currentStatus)}</strong>
+            <div class="order-status">
+              <span class="order-status-label">Status</span>
+              <strong class="order-status-value">${escapeHtml(currentStatus)}</strong>
             </div>
           </td>
           <td style="font-size:0.85rem;">
