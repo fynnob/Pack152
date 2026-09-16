@@ -159,8 +159,19 @@
 
     function navigateTo(path) { window.location.href = path; }
 
+    function captureOnboardingKey() {
+      const key = new URLSearchParams(window.location.search).get('key');
+      if (!key || !/^[a-f0-9]{32}$/i.test(key)) return;
+
+      localStorage.setItem('pack152_onboarding_key', key.toLowerCase());
+      const cleanUrl = `${window.location.pathname}${window.location.hash}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
     /* Check Session & Route Logged In Users */
     document.addEventListener('DOMContentLoaded', async () => {
+      captureOnboardingKey();
+
       // Toast message handler
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('toast') === 'not_logged_in') {

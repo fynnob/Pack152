@@ -247,6 +247,7 @@
   <script>
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    const ONBOARDING_KEY_STORAGE = 'pack152_onboarding_key';
 
     var supabaseClient = null;
     try {
@@ -329,6 +330,10 @@
     document.addEventListener('DOMContentLoaded', async () => {
       addKidRow();
       attachInputChangeListeners();
+      const storedKey = localStorage.getItem(ONBOARDING_KEY_STORAGE);
+      if (storedKey && /^[a-f0-9]{32}$/i.test(storedKey)) {
+        document.getElementById('bypass-key').value = storedKey;
+      }
 
       if (supabaseClient) {
         const { data: { user } } = await supabaseClient.auth.getUser();
@@ -432,6 +437,8 @@
         });
 
         if (error) throw error;
+
+        localStorage.removeItem(ONBOARDING_KEY_STORAGE);
 
         if (data && data.status === 'approved') {
           window.location.href = '/';
