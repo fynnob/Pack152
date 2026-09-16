@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security & RLS Tester — Pack 152</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --font-sans: system-ui, -apple-system, sans-serif;
+      --bg: #0f172a; --surface: #1e293b; --text: #f8fafc; --muted: #94a3b8;
+      --primary: #3b82f6; --success: #22c55e; --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); background: var(--bg); color: var(--text); padding: 2rem; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: var(--surface); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    h1, h2, h3 { margin-bottom: 1rem; color: #fff; }
+    button { background: var(--primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; margin-right: 0.5rem; margin-bottom: 0.5rem; }
+    button:hover { opacity: 0.9; }
+    button.danger { background: var(--danger); }
+    input { background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 0.5rem; border-radius: 4px; margin-right: 0.5rem; }
+    pre { background: #000; padding: 1rem; border-radius: 6px; overflow-x: auto; color: #a5b4fc; font-size: 0.85rem; max-height: 400px; overflow-y: auto; }
+    .status-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    .status-badge.auth { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .status-badge.anon { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🛡️ Supabase RLS Testing Tool</h1>
+    <p style="color: var(--muted); margin-bottom: 2rem;">Test exactly what data your current session is allowed to read or write.</p>
+
+    <!-- Auth State Card -->
+    <div class="card">
+      <h2>1. Current Authentication State</h2>
+      <div id="auth-status" style="margin-bottom: 1rem;">Loading...</div>
+      
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <input type="email" id="test-email" placeholder="Email" />
+        <input type="password" id="test-pass" placeholder="Password" />
+        <button onclick="testLogin()">Login</button>
+        <button onclick="testLogout()" class="danger">Logout (Become Anonymous)</button>
+      </div>
+    </div>
+
+    <!-- Read Tests Card -->
+    <div class="card">
+      <h2>2. Test Read Access (SELECT)</h2>
+      <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.85rem;">
+        If RLS works, Leaders see all orders, Parents see only their own, and Anonymous users see nothing.
+      </p>
+      <button onclick="runQuery('orders', 'select')">Fetch All Orders</button>
+      <button onclick="runQuery('profile', 'select')">Fetch All Profiles</button>
+      <button onclick="runQuery('items', 'select')">Fetch Catalog Items</button>
+    </div>
+
+    <!-- Write Tests Card -->
+    <div class="card">
+      <h2>3. Test Write Access (UPDATE)</h2>
+      <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.85rem;">
+        Attempt to modify an order's status to bypass restrictions.
+      </p>
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <input type="text" id="target-order-id" placeholder="Target Order ID (UUID)" style="width: 250px;" />
+        <input type="text" id="target-status" placeholder="New Status" value="Delivered" />
+        <button onclick="testUpdateOrder()">Attempt Update</button>
+      </div>
+    </div>
+
+    <!-- Output Console -->
+    <div class="card">
+      <h2>Output Console</h2>
+      <button onclick="document.getElementById('console-output').textContent = '// Ready...'" style="background: #475569;">Clear Console</button>
+      <pre id="console-output">// Ready...</pre>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const out = document.getElementById('console-output');
+    
+    function log(title, data) {
+      const timestamp = new Date().toLocaleTimeString();
+      const formatted = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+      out.textContent = `[${timestamp}] === ${title} ===\n${formatted}\n\n` + out.textContent;
+    }
+
+    // --- Authentication ---
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const statusDiv = document.getElementById('auth-status');
+      
+      if (user) {
+        // Fetch profile to see role
+        const { data: profile } = await supabase.from('profile').select('role, status').eq('id', user.id).single();
+        statusDiv.innerHTML = `
+          <span class="status-badge auth">Authenticated</span><br><br>
+          <strong>Email:</strong> ${user.email}<br>
+          <strong>UID:</strong> ${user.id}<br>
+          <strong>Profile Role:</strong> ${profile ? profile.role : 'None'}<br>
+          <strong>Profile Status:</strong> ${profile ? profile.status : 'None'}
+        `;
+      } else {
+        statusDiv.innerHTML = `<span class="status-badge anon">Unauthenticated (Anonymous)</span>`;
+      }
+    }
+
+    async function testLogin() {
+      const email = document.getElementById('test-email').value;
+      const pass = document.getElementById('test-pass').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (error) log('Login Error', error);
+      else {
+        log('Login Success', data.user);
+        checkAuth();
+      }
+    }
+
+    async function testLogout() {
+      await supabase.auth.signOut();
+      log('Logout', 'User signed out successfully.');
+      checkAuth();
+    }
+
+    // --- Read Testing ---
+    async function runQuery(table, action) {
+      log(`Executing SELECT on '${table}'...`, 'Waiting for response...');
+      const { data, error } = await supabase.from(table).select('*');
+      if (error) log(`Error reading ${table}`, error);
+      else log(`Success reading ${table} (Found ${data.length} rows)`, data);
+    }
+
+    // --- Write Testing ---
+    async function testUpdateOrder() {
+      const orderId = document.getElementById('target-order-id').value.trim();
+      const newStatus = document.getElementById('target-status').value.trim();
+      
+      if (!orderId) {
+        alert("Please enter an Order ID to test against.");
+        return;
+      }
+
+      log(`Attempting to UPDATE order ${orderId}...`, `Setting status to: ${newStatus}`);
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId)
+        .select();
+
+      if (error) log(`Update Blocked/Error`, error);
+      else if (data.length === 0) log(`Update Failed Silently`, "RLS blocked the update (0 rows affected). The row exists but you lack permission to modify it.");
+      else log(`Update Success!`, data);
+    }
+
+    // Init
+    checkAuth();
+    supabase.auth.onAuthStateChange(() => checkAuth());
+  </script>
+</body>
+</html>
