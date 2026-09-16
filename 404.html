@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found — Pack 152</title>
+  <link rel="stylesheet" href="/shared.css?v=14">
+  <style>
+    .error-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 2rem 1.25rem;
+      background: var(--page);
+    }
+
+    .error-card {
+      width: min(100%, 620px);
+      padding: clamp(2rem, 6vw, 4rem);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      text-align: center;
+    }
+
+    .error-code {
+      margin-bottom: 0.5rem;
+      color: var(--color-primary);
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 16vw, 8rem);
+      font-weight: 700;
+      line-height: 0.95;
+    }
+
+    .error-card h1 {
+      margin-bottom: 0.75rem;
+      font-size: clamp(1.7rem, 5vw, 2.4rem);
+    }
+
+    .error-card p {
+      max-width: 420px;
+      margin: 0 auto 1.75rem;
+      color: var(--ink-muted);
+    }
+
+    .error-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .error-actions a,
+    .error-actions button {
+      min-width: 9rem;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .error-back {
+      background: var(--color-secondary);
+      color: #fff;
+    }
+
+    .error-home {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--ink);
+    }
+
+    .error-actions a:hover,
+    .error-actions button:hover {
+      transform: translateY(-1px);
+    }
+
+    .error-home:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--color-primary);
+    }
+  </style>
+</head>
+<body>
+  <main class="error-page">
+    <section class="error-card" aria-labelledby="error-title">
+      <div class="error-code" aria-hidden="true">404</div>
+      <h1 id="error-title">Page not found</h1>
+      <p>That Pack 152 page does not exist or may have moved.</p>
+      <div class="error-actions">
+        <button class="error-back" type="button" onclick="goBack()">← Back to last page</button>
+        <a class="error-home" href="/">Home</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '/';
+      }
+    }
+  </script>
+</body>
+</html>
