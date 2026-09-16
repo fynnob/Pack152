@@ -124,7 +124,20 @@
         return { listing, imageUrl: signed?.signedUrl || '' };
       }));
 
-      grid.innerHTML = rendered.map(({ listing, imageUrl }) => `
+      const ownListings = rendered.filter(({ listing }) => listing.seller_id === currentUser.id);
+      const otherListings = rendered.filter(({ listing }) => listing.seller_id !== currentUser.id);
+      const ownListingsGroup = ownListings.length ? `
+        <details class="listing-group">
+          <summary>Your listings <span>${ownListings.length}</span></summary>
+          <div class="listing-group-grid">${ownListings.map(renderListingCard).join('')}</div>
+        </details>
+      ` : '';
+      grid.innerHTML = `${ownListingsGroup}${otherListings.map(renderListingCard).join('')}`;
+    }
+
+    function renderListingCard({ listing, imageUrl }) {
+      const canRemove = isLeader || listing.seller_id === currentUser.id;
+      return `
         <article class="item-card listing-card">
           <div class="listing-primary">
             ${imageUrl ? `<img class="item-image listing-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(listing.name)}" loading="lazy">` : '<div class="item-image listing-image"></div>'}
@@ -136,10 +149,10 @@
             <div class="item-price listing-price">${formatPrice(listing.price)}</div>
             <div class="item-desc listing-description">${escapeHtml(listing.description)}</div>
             <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
-            ${isLeader ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Remove listing</button></div>` : ''}
+            ${canRemove ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}', '${listing.seller_id}')">Remove listing</button></div>` : ''}
           </div>
         </article>
-      `).join('');
+      `;
     }
 
     async function publishListing(event) {
@@ -185,9 +198,9 @@
 
     function openListingModal() { document.getElementById('listing-modal').style.display = 'flex'; }
     function closeListingModal() { document.getElementById('listing-modal').style.display = 'none'; setFormStatus(''); }
-    function openConfirmModal(id, photoPath) {
-      if (!isLeader) return;
-      listingToRemove = { id, photoPath };
+    function openConfirmModal(id, photoPath, sellerId) {
+      if (!isLeader && sellerId !== currentUser.id) return;
+      listingToRemove = { id, photoPath, sellerId };
       document.getElementById('delete-confirm-modal').style.display = 'flex';
     }
     function closeDeleteConfirmModal() {
@@ -195,7 +208,7 @@
       document.getElementById('delete-confirm-modal').style.display = 'none';
     }
     async function confirmListingRemoval() {
-      if (!isLeader || !listingToRemove) return;
+      if (!listingToRemove || (!isLeader && listingToRemove.sellerId !== currentUser.id)) return;
       const { id, photoPath } = listingToRemove;
       const confirmButton = document.querySelector('.btn-delete-confirm');
       confirmButton.disabled = true;
