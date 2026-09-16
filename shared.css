@@ -502,6 +502,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 
 /* Second-Hand Store follows the same parent-platform surfaces and controls. */
 .secondhand-page .navbar {
+  display: flex !important;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -513,6 +514,8 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   border-radius: 0 !important;
 }
 .secondhand-page .navbar h1 {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0 !important;
   font-size: 1.35rem !important;
   line-height: normal !important;
@@ -571,8 +574,10 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   text-transform: uppercase;
 }
 .secondhand-page .listing-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 1.35rem;
+  padding: 1.25rem;
 }
 .secondhand-page .listing-card {
   background: var(--surface) !important;
@@ -672,20 +677,32 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .form-actions .btn-action,
 .secondhand-page .form-actions .btn-back {
   flex: 1 1 0;
-  min-height: 2.5rem;
-  padding: 0.6rem 1rem !important;
-  font-size: 0.85rem !important;
+  min-height: 2.55rem;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: var(--radius-md) !important;
+  font-size: 0.9rem !important;
   font-weight: 700 !important;
   text-align: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 .secondhand-page .form-actions .btn-back {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid var(--line) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   color: var(--ink) !important;
 }
 .secondhand-page .form-actions .btn-back:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: var(--color-primary) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  transform: translateY(-1px);
+}
+.secondhand-page .form-actions .btn-action {
+  background: var(--color-secondary) !important;
+  border: 0 !important;
+  color: #fff !important;
+}
+.secondhand-page .form-actions .btn-action:hover {
+  background: var(--color-secondary-hover) !important;
+  transform: translateY(-1px);
 }
 .secondhand-page .modal-card h2 { color: var(--ink) !important; }
 .secondhand-page .modal-card > p { color: var(--ink-muted) !important; }
