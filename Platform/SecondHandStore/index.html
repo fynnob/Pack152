@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Second-Hand Store — Pack 152</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/auth-guard.js"></script>
+  <link rel="stylesheet" href="/shared.css?v=10">
+  <style>
+    .secondhand-page .container { max-width: 1180px; margin: 2.5rem auto; padding: 0 1.5rem; }
+    .secondhand-page .page-header { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; margin-bottom:2rem; }
+    .secondhand-page .page-header h2 { margin-bottom:0.35rem; }
+    .secondhand-page .page-header p { max-width:650px; }
+    .secondhand-page .listing-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:1.15rem; }
+    .secondhand-page .listing-card { display:flex; flex-direction:column; overflow:hidden; min-height:100%; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); }
+    .secondhand-page .listing-image { width:100%; height:190px; object-fit:cover; background:#0f172a; }
+    .secondhand-page .listing-content { display:flex; flex:1; flex-direction:column; padding:1rem; }
+    .secondhand-page .listing-content h3 { font-size:1.1rem; margin-bottom:0.45rem; }
+    .secondhand-page .listing-description { flex:1; color:var(--ink-muted); font-size:0.88rem; line-height:1.5; margin-bottom:1rem; white-space:pre-wrap; }
+    .secondhand-page .listing-meta { display:flex; justify-content:space-between; gap:0.75rem; align-items:center; padding-top:0.75rem; border-top:1px solid var(--line); color:var(--ink-muted); font-size:0.78rem; }
+    .secondhand-page .listing-contact { margin-top:0.75rem; padding:0.7rem; border-radius:var(--radius-md); background:rgba(15,23,42,0.55); color:#cbd5e1; font-size:0.78rem; line-height:1.45; }
+    .secondhand-page .listing-owner-actions { display:flex; gap:0.5rem; margin-top:0.75rem; }
+    .secondhand-page .listing-owner-actions button { flex:1; }
+    .secondhand-page .empty-state { padding:3rem 1rem; border:1px dashed var(--line); border-radius:var(--radius-lg); color:var(--ink-muted); text-align:center; }
+    .secondhand-page .modal-card { max-width:620px; }
+    .secondhand-page .modal-card h2 { margin-bottom:0.4rem; }
+    .secondhand-page .modal-card > p { margin-bottom:1.25rem; }
+    .secondhand-page .form-group { margin-bottom:1rem; }
+    .secondhand-page .form-label { display:block; margin-bottom:0.35rem; color:#cbd5e1; font-size:0.85rem; font-weight:700; }
+    .secondhand-page .contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+    .secondhand-page .form-hint { color:#94a3b8; font-size:0.75rem; margin-top:0.3rem; }
+    .secondhand-page .form-actions { display:flex; gap:0.65rem; justify-content:flex-end; margin-top:1.25rem; }
+    .secondhand-page .form-actions button { min-width:8rem; }
+    .secondhand-page .status-message { min-height:1.2rem; margin-bottom:0.75rem; color:#fca5a5; font-size:0.82rem; }
+    @media (max-width:680px) {
+      .secondhand-page .container { margin-top:1.5rem; padding:0 1rem; }
+      .secondhand-page .page-header { align-items:flex-start; flex-direction:column; }
+      .secondhand-page .contact-grid { grid-template-columns:1fr; }
+      .secondhand-page .form-actions { flex-direction:column-reverse; }
+      .secondhand-page .form-actions button { width:100%; }
+    }
+  </style>
+</head>
+<body class="secondhand-page">
+  <header class="navbar">
+    <h1>Pack 152 — Second-Hand Store</h1>
+    <div class="nav-actions">
+      <button class="btn-nav" type="button" onclick="openListingModal()">+ List an Item</button>
+      <a href="/Platform/" class="btn-nav">← Back to Hub</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h2>Pack 152 Second-Hand Store</h2>
+        <p>Pass along uniforms, books, and gear to another Pack 152 family. Contact the seller directly to arrange the exchange.</p>
+      </div>
+    </div>
+
+    <div id="listing-status" class="status-message" role="status"></div>
+    <div id="listing-grid" class="listing-grid">
+      <div class="empty-state">Loading listings...</div>
+    </div>
+  </main>
+
+  <div id="listing-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="item-detail-close" type="button" onclick="closeListingModal()" aria-label="Close listing form">×</button>
+      <h2>List an Item</h2>
+      <p>Add something another Pack 152 family might need.</p>
+      <form id="listing-form">
+        <div class="form-group">
+          <label class="form-label" for="listing-name">Item name</label>
+          <input id="listing-name" class="form-control" type="text" maxlength="120" required placeholder="e.g. Youth medium uniform shirt">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="listing-description">Description</label>
+          <textarea id="listing-description" class="form-control" rows="4" maxlength="2000" required placeholder="Condition, size, price or anything helpful..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="listing-photo">Photo</label>
+          <input id="listing-photo" class="form-control" type="file" accept="image/*" required>
+          <div class="form-hint">Images only, maximum 10 MB.</div>
+        </div>
+        <div class="contact-grid">
+          <div class="form-group">
+            <label class="form-label" for="listing-email">Contact email</label>
+            <input id="listing-email" class="form-control" type="email" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="listing-phone">Contact phone</label>
+            <input id="listing-phone" class="form-control" type="tel" required>
+          </div>
+        </div>
+        <div id="form-status" class="status-message" role="alert"></div>
+        <div class="form-actions">
+          <button class="btn-back" type="button" onclick="closeListingModal()">Cancel</button>
+          <button class="btn-action" type="submit">Publish Listing</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="confirm-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h2>Remove this listing?</h2>
+      <p>It will no longer appear in the Second-Hand Store.</p>
+      <div class="form-actions">
+        <button class="btn-back" type="button" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn-action" type="button" onclick="confirmRemoveListing()">Remove Listing</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
+    const BUCKET_NAME = 'SecondHandStore';
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    let supabaseClient;
+    let currentUser;
+    let listingToRemove;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) return;
+      currentUser = user;
+      await loadProfileDefaults();
+      await loadListings();
+      document.getElementById('listing-form').addEventListener('submit', publishListing);
+    });
+
+    async function loadProfileDefaults() {
+      const { data: profile } = await supabaseClient.from('profile').select('parent_name, phone_number').eq('id', currentUser.id).single();
+      document.getElementById('listing-email').value = currentUser.email || '';
+      document.getElementById('listing-phone').value = profile?.phone_number || '';
+    }
+
+    async function loadListings() {
+      const grid = document.getElementById('listing-grid');
+      const { data: listings, error } = await supabaseClient.from('SecondHandStore').select('*').eq('is_active', true).order('created_at', { ascending: false });
+      if (error) {
+        grid.innerHTML = '<div class="empty-state">Listings could not be loaded.</div>';
+        setStatus(error.message);
+        return;
+      }
+      if (!listings?.length) {
+        grid.innerHTML = '<div class="empty-state">No items are listed yet. Be the first to share something.</div>';
+        return;
+      }
+
+      const rendered = await Promise.all(listings.map(async listing => {
+        const { data: signed } = await supabaseClient.storage.from(BUCKET_NAME).createSignedUrl(listing.photo_path, 3600);
+        return { listing, imageUrl: signed?.signedUrl || '' };
+      }));
+
+      grid.innerHTML = rendered.map(({ listing, imageUrl }) => `
+        <article class="listing-card">
+          ${imageUrl ? `<img class="listing-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(listing.name)}" loading="lazy">` : '<div class="listing-image"></div>'}
+          <div class="listing-content">
+            <h3>${escapeHtml(listing.name)}</h3>
+            <div class="listing-description">${escapeHtml(listing.description)}</div>
+            <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
+            <div class="listing-meta"><span>${new Date(listing.created_at).toLocaleDateString()}</span>${listing.seller_id === currentUser.id ? '<span>Your listing</span>' : ''}</div>
+            ${listing.seller_id === currentUser.id ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Mark as sold / remove</button></div>` : ''}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function publishListing(event) {
+      event.preventDefault();
+      setFormStatus('');
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      const file = document.getElementById('listing-photo').files[0];
+      if (!file || !file.type.startsWith('image/')) return setFormStatus('Please choose an image file.');
+      if (file.size > MAX_FILE_SIZE) return setFormStatus('The image must be 10 MB or smaller.');
+
+      submitButton.disabled = true;
+      const extension = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const photoPath = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(photoPath, file, { contentType: file.type, upsert: false });
+      if (uploadError) {
+        setFormStatus(uploadError.message);
+        submitButton.disabled = false;
+        return;
+      }
+
+      const { error: insertError } = await supabaseClient.from('SecondHandStore').insert({
+        seller_id: currentUser.id,
+        name: document.getElementById('listing-name').value.trim(),
+        description: document.getElementById('listing-description').value.trim(),
+        photo_path: photoPath,
+        contact_email: document.getElementById('listing-email').value.trim(),
+        contact_phone: document.getElementById('listing-phone').value.trim()
+      });
+      if (insertError) {
+        await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
+        setFormStatus(insertError.message);
+        submitButton.disabled = false;
+        return;
+      }
+
+      event.target.reset();
+      await loadProfileDefaults();
+      closeListingModal();
+      submitButton.disabled = false;
+      await loadListings();
+    }
+
+    function openListingModal() { document.getElementById('listing-modal').style.display = 'flex'; }
+    function closeListingModal() { document.getElementById('listing-modal').style.display = 'none'; setFormStatus(''); }
+    function openConfirmModal(id, photoPath) { listingToRemove = { id, photoPath }; document.getElementById('confirm-modal').style.display = 'flex'; }
+    function closeConfirmModal() { listingToRemove = null; document.getElementById('confirm-modal').style.display = 'none'; }
+
+    async function confirmRemoveListing() {
+      if (!listingToRemove) return;
+      const { id, photoPath } = listingToRemove;
+      const { error } = await supabaseClient.from('SecondHandStore').update({ is_active: false }).eq('id', id).eq('seller_id', currentUser.id);
+      if (error) { setStatus(error.message); closeConfirmModal(); return; }
+      await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
+      closeConfirmModal();
+      await loadListings();
+    }
+
+    function setStatus(message) { document.getElementById('listing-status').textContent = message || ''; }
+    function setFormStatus(message) { document.getElementById('form-status').textContent = message || ''; }
+    function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[character]); }
+  </script>
+</body>
+</html>
