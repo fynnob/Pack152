@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS public."SecondHandStore" (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   seller_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 120),
+  price numeric(10, 2) NOT NULL DEFAULT 0 CHECK (price >= 0),
   description text NOT NULL CHECK (char_length(description) BETWEEN 1 AND 2000),
   photo_path text NOT NULL,
   contact_email text NOT NULL,
@@ -12,6 +13,15 @@ CREATE TABLE IF NOT EXISTS public."SecondHandStore" (
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public."SecondHandStore"
+ADD COLUMN IF NOT EXISTS price numeric(10, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE public."SecondHandStore"
+DROP CONSTRAINT IF EXISTS "SecondHandStore_price_check";
+
+ALTER TABLE public."SecondHandStore"
+ADD CONSTRAINT "SecondHandStore_price_check" CHECK (price >= 0);
 
 ALTER TABLE public."SecondHandStore" ENABLE ROW LEVEL SECURITY;
 
