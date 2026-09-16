@@ -19,14 +19,6 @@
   </header>
 
   <main class="container">
-    <div class="page-header">
-      <div>
-        <div class="eyebrow">Pack 152 community exchange</div>
-        <h2>Pack 152 Second-Hand Store</h2>
-        <p>Pass along uniforms, books, and gear to another Pack 152 family. Contact the seller directly to arrange the exchange.</p>
-      </div>
-    </div>
-
     <div id="listing-status" class="status-message" role="status"></div>
     <div id="listing-grid" class="listing-grid">
       <div class="empty-state">Loading listings...</div>
@@ -115,11 +107,16 @@
       }));
 
       grid.innerHTML = rendered.map(({ listing, imageUrl }) => `
-        <article class="listing-card">
-          ${imageUrl ? `<img class="listing-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(listing.name)}" loading="lazy">` : '<div class="listing-image"></div>'}
-          <div class="listing-content">
-            <h3>${escapeHtml(listing.name)}</h3>
-            <div class="listing-description">${escapeHtml(listing.description)}</div>
+        <article class="item-card listing-card">
+          <div class="listing-primary">
+            ${imageUrl ? `<img class="item-image listing-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(listing.name)}" loading="lazy">` : '<div class="item-image listing-image"></div>'}
+            <div class="item-heading listing-heading">
+              <div class="item-title">${escapeHtml(listing.name)}</div>
+              <span class="badge-sku item-sku">Community</span>
+            </div>
+          </div>
+          <div class="listing-details">
+            <div class="item-desc listing-description">${escapeHtml(listing.description)}</div>
             <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
             <div class="listing-meta"><span>${new Date(listing.created_at).toLocaleDateString()}</span>${listing.seller_id === currentUser.id ? '<span>Your listing</span>' : ''}</div>
             ${listing.seller_id === currentUser.id ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Mark as sold / remove</button></div>` : ''}

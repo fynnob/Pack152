@@ -580,6 +580,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   padding: 1.25rem;
 }
 .secondhand-page .listing-card {
+  min-width: 0;
   background: var(--surface) !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-lg) !important;
@@ -592,12 +593,26 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   transform: translateY(-2px);
 }
 .secondhand-page .listing-image {
-  height: 205px;
-  border-bottom: 1px solid var(--line);
+  height: 170px;
+  margin-bottom: 0.8rem;
   object-fit: cover;
 }
-.secondhand-page .listing-content { padding: 1.2rem !important; }
-.secondhand-page .listing-content h3 { font-size: 1.12rem !important; margin-bottom: 0.5rem !important; }
+.secondhand-page .listing-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.45rem;
+  min-height: 3.1rem;
+}
+.secondhand-page .listing-heading .item-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.secondhand-page .listing-heading .item-sku {
+  max-width: 7rem;
+  text-align: center;
+}
+.secondhand-page .listing-details { margin-top: 0.8rem; }
 .secondhand-page .listing-description { min-height: 4.1rem; font-size: 0.88rem; line-height: 1.55; }
 .secondhand-page .listing-contact {
   margin-top: 0.75rem;
