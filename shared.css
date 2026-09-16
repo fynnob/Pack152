@@ -524,13 +524,14 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   align-items: center !important;
   justify-content: flex-end !important;
   flex-wrap: nowrap !important;
+  flex: 0 0 auto;
   gap: 0.6rem !important;
 }
 .secondhand-page .navbar .btn-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 8.5rem;
+  flex: 0 0 auto;
   min-height: 0;
   font-size: 0.85rem !important;
   white-space: nowrap;
@@ -673,25 +674,19 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   flex: 1 1 0;
   min-height: 2.5rem;
   padding: 0.6rem 1rem !important;
-  border: 1px solid transparent !important;
-  border-radius: var(--radius-md) !important;
-  font-family: var(--font-sans) !important;
   font-size: 0.85rem !important;
   font-weight: 700 !important;
-  line-height: 1.2;
-  cursor: pointer;
+  text-align: center;
 }
 .secondhand-page .form-actions .btn-back {
   background: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--line) !important;
+  border: 1px solid var(--line) !important;
   color: var(--ink) !important;
 }
 .secondhand-page .form-actions .btn-back:hover {
   background: rgba(255, 255, 255, 0.14) !important;
   border-color: var(--color-primary) !important;
-  transform: translateY(-1px);
 }
-.secondhand-page .form-actions .btn-action:hover { transform: translateY(-1px); }
 .secondhand-page .modal-card h2 { color: var(--ink) !important; }
 .secondhand-page .modal-card > p { color: var(--ink-muted) !important; }
 .secondhand-page .form-label { color: var(--ink-muted) !important; }
@@ -760,5 +755,5 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   .secondhand-page .form-actions button { width: 100%; }
   .secondhand-page .navbar { align-items: flex-start !important; margin: 0; padding: 1rem !important; }
   .secondhand-page .navbar h1 { white-space: normal; }
-  .secondhand-page .navbar .nav-actions { width: auto; }
+  .secondhand-page .navbar .nav-actions { width: auto; flex: 0 0 auto; }
 }
