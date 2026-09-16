@@ -159,11 +159,17 @@
 
     function navigateTo(path) { window.location.href = path; }
 
-    function captureOnboardingKey() {
-      const key = new URLSearchParams(window.location.search).get('key');
-      if (!key || !/^[a-f0-9]{32}$/i.test(key)) return;
+    function normalizeOnboardingKey(value) {
+      const normalized = String(value || '').trim().replace(/[{}\s-]/g, '');
+      return /^[a-f0-9]{32}$/i.test(normalized) ? normalized.toLowerCase() : '';
+    }
 
-      localStorage.setItem('pack152_onboarding_key', key.toLowerCase());
+    function captureOnboardingKey() {
+      const key = normalizeOnboardingKey(new URLSearchParams(window.location.search).get('key'));
+      if (!key) return;
+
+      localStorage.setItem('pack152_onboarding_key', key);
+      sessionStorage.setItem('pack152_onboarding_key', key);
       const cleanUrl = `${window.location.pathname}${window.location.hash}`;
       window.history.replaceState({}, document.title, cleanUrl);
     }

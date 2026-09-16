@@ -256,6 +256,20 @@
       }
     } catch (err) { console.warn(err); }
 
+    function normalizeOnboardingKey(value) {
+      const normalized = String(value || '').trim().replace(/[{}\s-]/g, '');
+      return /^[a-f0-9]{32}$/i.test(normalized) ? normalized.toLowerCase() : '';
+    }
+
+    function prefillOnboardingKey() {
+      const storedKey = normalizeOnboardingKey(
+        localStorage.getItem(ONBOARDING_KEY_STORAGE) || sessionStorage.getItem(ONBOARDING_KEY_STORAGE)
+      );
+      const keyInput = document.getElementById('bypass-key');
+      if (!keyInput || !storedKey) return;
+      keyInput.value = storedKey;
+    }
+
     /* Phone Formatter */
     function formatIntlPhone(input) {
       let val = input.value;
@@ -330,10 +344,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
       addKidRow();
       attachInputChangeListeners();
-      const storedKey = localStorage.getItem(ONBOARDING_KEY_STORAGE);
-      if (storedKey && /^[a-f0-9]{32}$/i.test(storedKey)) {
-        document.getElementById('bypass-key').value = storedKey;
-      }
+      prefillOnboardingKey();
 
       if (supabaseClient) {
         const { data: { user } } = await supabaseClient.auth.getUser();
@@ -439,6 +450,7 @@
         if (error) throw error;
 
         localStorage.removeItem(ONBOARDING_KEY_STORAGE);
+        sessionStorage.removeItem(ONBOARDING_KEY_STORAGE);
 
         if (data && data.status === 'approved') {
           window.location.href = '/';
@@ -452,6 +464,7 @@
     }
 
     document.getElementById('profile-form').addEventListener('submit', handleProfileSubmit);
+    prefillOnboardingKey();
   </script>
 </body>
 </html>

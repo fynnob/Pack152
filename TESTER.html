@@ -40,8 +40,8 @@
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <input type="email" id="test-email" placeholder="Email" />
         <input type="password" id="test-pass" placeholder="Password" />
-        <button onclick="testLogin()">Login</button>
-        <button onclick="testLogout()" class="danger">Logout (Become Anonymous)</button>
+        <button onclick="window.testLogin()">Login</button>
+        <button onclick="window.testLogout()" class="danger">Logout (Become Anonymous)</button>
       </div>
     </div>
 
@@ -51,9 +51,9 @@
       <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.85rem;">
         If RLS works, Leaders see all orders, Parents see only their own, and Anonymous users see nothing.
       </p>
-      <button onclick="runQuery('orders', 'select')">Fetch All Orders</button>
-      <button onclick="runQuery('profile', 'select')">Fetch All Profiles</button>
-      <button onclick="runQuery('items', 'select')">Fetch Catalog Items</button>
+      <button onclick="window.runQuery('orders')">Fetch All Orders</button>
+      <button onclick="window.runQuery('profile')">Fetch All Profiles</button>
+      <button onclick="window.runQuery('items')">Fetch Catalog Items</button>
     </div>
 
     <!-- Write Tests Card -->
@@ -65,7 +65,7 @@
       <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
         <input type="text" id="target-order-id" placeholder="Target Order ID (UUID)" style="width: 250px;" />
         <input type="text" id="target-status" placeholder="New Status" value="Delivered" />
-        <button onclick="testUpdateOrder()">Attempt Update</button>
+        <button onclick="window.testUpdateOrder()">Attempt Update</button>
       </div>
     </div>
 
@@ -78,27 +78,36 @@
   </div>
 
   <script>
-    // Initialize Supabase
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let supabaseClient = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.checkAuth();
+        supabaseClient.auth.onAuthStateChange(() => window.checkAuth());
+      } else {
+        window.log('Initialization Error', 'Supabase CDN script failed to load.');
+      }
+    });
 
     const out = document.getElementById('console-output');
     
-    function log(title, data) {
+    window.log = function(title, data) {
       const timestamp = new Date().toLocaleTimeString();
       const formatted = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
       out.textContent = `[${timestamp}] === ${title} ===\n${formatted}\n\n` + out.textContent;
-    }
+    };
 
     // --- Authentication ---
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+    window.checkAuth = async function() {
+      if (!supabaseClient) return;
+      const { data: { user } } = await supabaseClient.auth.getUser();
       const statusDiv = document.getElementById('auth-status');
       
       if (user) {
-        // Fetch profile to see role
-        const { data: profile } = await supabase.from('profile').select('role, status').eq('id', user.id).single();
+        const { data: profile } = await supabaseClient.from('profile').select('role, status').eq('id', user.id).single();
         statusDiv.innerHTML = `
           <span class="status-badge auth">Authenticated</span><br><br>
           <strong>Email:</strong> ${user.email}<br>
@@ -109,35 +118,39 @@
       } else {
         statusDiv.innerHTML = `<span class="status-badge anon">Unauthenticated (Anonymous)</span>`;
       }
-    }
+    };
 
-    async function testLogin() {
+    window.testLogin = async function() {
+      if (!supabaseClient) return;
       const email = document.getElementById('test-email').value;
       const pass = document.getElementById('test-pass').value;
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error) log('Login Error', error);
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+      if (error) window.log('Login Error', error);
       else {
-        log('Login Success', data.user);
-        checkAuth();
+        window.log('Login Success', data.user);
+        window.checkAuth();
       }
-    }
+    };
 
-    async function testLogout() {
-      await supabase.auth.signOut();
-      log('Logout', 'User signed out successfully.');
-      checkAuth();
-    }
+    window.testLogout = async function() {
+      if (!supabaseClient) return;
+      await supabaseClient.auth.signOut();
+      window.log('Logout', 'User signed out successfully.');
+      window.checkAuth();
+    };
 
     // --- Read Testing ---
-    async function runQuery(table, action) {
-      log(`Executing SELECT on '${table}'...`, 'Waiting for response...');
-      const { data, error } = await supabase.from(table).select('*');
-      if (error) log(`Error reading ${table}`, error);
-      else log(`Success reading ${table} (Found ${data.length} rows)`, data);
-    }
+    window.runQuery = async function(table) {
+      if (!supabaseClient) return;
+      window.log(`Executing SELECT on '${table}'...`, 'Waiting for response...');
+      const { data, error } = await supabaseClient.from(table).select('*');
+      if (error) window.log(`Error reading ${table}`, error);
+      else window.log(`Success reading ${table} (Found ${data?.length || 0} rows)`, data);
+    };
 
     // --- Write Testing ---
-    async function testUpdateOrder() {
+    window.testUpdateOrder = async function() {
+      if (!supabaseClient) return;
       const orderId = document.getElementById('target-order-id').value.trim();
       const newStatus = document.getElementById('target-status').value.trim();
       
@@ -146,21 +159,17 @@
         return;
       }
 
-      log(`Attempting to UPDATE order ${orderId}...`, `Setting status to: ${newStatus}`);
-      const { data, error } = await supabase
+      window.log(`Attempting to UPDATE order ${orderId}...`, `Setting status to: ${newStatus}`);
+      const { data, error } = await supabaseClient
         .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId)
         .select();
 
-      if (error) log(`Update Blocked/Error`, error);
-      else if (data.length === 0) log(`Update Failed Silently`, "RLS blocked the update (0 rows affected). The row exists but you lack permission to modify it.");
-      else log(`Update Success!`, data);
-    }
-
-    // Init
-    checkAuth();
-    supabase.auth.onAuthStateChange(() => checkAuth());
+      if (error) window.log(`Update Blocked/Error`, error);
+      else if (data.length === 0) window.log(`Update Failed Silently`, "RLS blocked the update (0 rows affected). The row exists but you lack permission to modify it.");
+      else window.log(`Update Success!`, data);
+    };
   </script>
 </body>
 </html>
