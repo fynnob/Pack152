@@ -520,6 +520,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 }
 .secondhand-page .navbar .nav-actions {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
   justify-content: flex-end !important;
   flex-wrap: nowrap !important;
@@ -528,6 +529,8 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .navbar .btn-nav {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 8.5rem;
   min-height: 0;
   font-size: 0.85rem !important;
   white-space: nowrap;
@@ -667,10 +670,28 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .modal-card input[type="file"] { padding: 0.45rem 0.6rem !important; }
 .secondhand-page .form-actions .btn-action,
 .secondhand-page .form-actions .btn-back {
+  flex: 1 1 0;
   min-height: 2.5rem;
   padding: 0.6rem 1rem !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-sans) !important;
   font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2;
+  cursor: pointer;
 }
+.secondhand-page .form-actions .btn-back {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+.secondhand-page .form-actions .btn-back:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: var(--color-primary) !important;
+  transform: translateY(-1px);
+}
+.secondhand-page .form-actions .btn-action:hover { transform: translateY(-1px); }
 .secondhand-page .modal-card h2 { color: var(--ink) !important; }
 .secondhand-page .modal-card > p { color: var(--ink-muted) !important; }
 .secondhand-page .form-label { color: var(--ink-muted) !important; }
