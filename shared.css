@@ -546,15 +546,18 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .modal-overlay[style*="display: flex"] { display: flex !important; }
 .secondhand-page .container {
   max-width: 1180px !important;
-  margin: 2.25rem auto !important;
+  margin: 2.5rem auto !important;
   padding: 0 1.5rem 4rem !important;
 }
 .secondhand-page .page-header {
+  display: flex;
+  justify-content: space-between;
   align-items: flex-start !important;
-  margin-bottom: 1.75rem !important;
+  gap: 1rem;
+  margin-bottom: 2rem !important;
 }
-.secondhand-page .page-header h2 { font-size: clamp(1.8rem, 4vw, 2.45rem) !important; }
-.secondhand-page .page-header p { max-width: 680px; line-height: 1.5; }
+.secondhand-page .page-header h2 { margin-bottom: 0.45rem; font-size: clamp(1.8rem, 4vw, 2.45rem) !important; }
+.secondhand-page .page-header p { max-width: 680px; line-height: 1.6; }
 .secondhand-page .eyebrow {
   margin-bottom: 0.5rem;
   color: #4ade80 !important;
@@ -564,8 +567,8 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   text-transform: uppercase;
 }
 .secondhand-page .listing-grid {
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.35rem;
 }
 .secondhand-page .listing-card {
   background: var(--surface) !important;
@@ -580,22 +583,26 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   transform: translateY(-2px);
 }
 .secondhand-page .listing-image {
-  height: 190px;
+  height: 205px;
   border-bottom: 1px solid var(--line);
   object-fit: cover;
 }
-.secondhand-page .listing-content { padding: 1.1rem !important; }
-.secondhand-page .listing-content h3 { font-size: 1.08rem !important; margin-bottom: 0.45rem !important; }
-.secondhand-page .listing-description { font-size: 0.88rem; line-height: 1.5; }
+.secondhand-page .listing-content { padding: 1.2rem !important; }
+.secondhand-page .listing-content h3 { font-size: 1.12rem !important; margin-bottom: 0.5rem !important; }
+.secondhand-page .listing-description { min-height: 4.1rem; font-size: 0.88rem; line-height: 1.55; }
 .secondhand-page .listing-contact {
+  margin-top: 0.75rem;
+  padding: 0.8rem;
   background: rgba(15, 23, 42, 0.58) !important;
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--ink-muted) !important;
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 .secondhand-page .listing-contact strong { color: var(--ink) !important; }
 .secondhand-page .listing-meta { border-color: var(--line) !important; }
 .secondhand-page .listing-meta span:last-child { color: #4ade80 !important; }
-.secondhand-page .listing-owner-actions { margin-top: 0.85rem; }
+.secondhand-page .listing-owner-actions { display: flex; gap: 0.5rem; margin-top: 0.85rem; }
 .secondhand-page .listing-owner-actions .btn-delete {
   width: 100%;
   padding: 0.55rem 0.75rem;
@@ -615,7 +622,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .modal-card {
   background: var(--surface) !important;
   border: 1px solid var(--line) !important;
-  border-radius: 1.25rem !important;
+  border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-card) !important;
   width: min(620px, 100%);
   max-height: min(760px, calc(100vh - 2rem));
@@ -668,6 +675,8 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .modal-card > p { color: var(--ink-muted) !important; }
 .secondhand-page .form-label { color: var(--ink-muted) !important; }
 .secondhand-page .form-hint { color: #94a3b8 !important; }
+.secondhand-page .form-group { margin-bottom: 1rem; }
+.secondhand-page .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
 .secondhand-page .form-actions { gap: 0.65rem; }
 .secondhand-page .status-message { color: #fca5a5 !important; }
 
@@ -724,7 +733,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   .secondhand-page .container { margin-top: 1.5rem !important; padding: 0 1rem 3rem !important; }
   .secondhand-page .page-header { margin-bottom: 1.4rem !important; }
   .secondhand-page .listing-grid { grid-template-columns: 1fr; gap: 1rem; }
-  .secondhand-page .listing-image { height: 210px; }
+  .secondhand-page .listing-image { height: 220px; }
   .secondhand-page .contact-grid { grid-template-columns: 1fr; }
   .secondhand-page .form-actions { flex-direction: column-reverse; }
   .secondhand-page .form-actions button { width: 100%; }
