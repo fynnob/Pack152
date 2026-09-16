@@ -29,6 +29,8 @@ DROP POLICY IF EXISTS "second_hand_store_read_authenticated" ON public."SecondHa
 DROP POLICY IF EXISTS "second_hand_store_insert_owner" ON public."SecondHandStore";
 DROP POLICY IF EXISTS "second_hand_store_update_owner" ON public."SecondHandStore";
 DROP POLICY IF EXISTS "second_hand_store_delete_owner" ON public."SecondHandStore";
+DROP POLICY IF EXISTS "second_hand_store_update_leader" ON public."SecondHandStore";
+DROP POLICY IF EXISTS "second_hand_store_delete_leader" ON public."SecondHandStore";
 
 CREATE POLICY "second_hand_store_read_authenticated"
 ON public."SecondHandStore"
@@ -55,10 +57,45 @@ FOR DELETE
 TO authenticated
 USING (seller_id = auth.uid());
 
+CREATE POLICY "second_hand_store_update_leader"
+ON public."SecondHandStore"
+FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.profile
+    WHERE profile.id = auth.uid()
+      AND profile.role IN ('leader', 'cub_master')
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.profile
+    WHERE profile.id = auth.uid()
+      AND profile.role IN ('leader', 'cub_master')
+  )
+);
+
+CREATE POLICY "second_hand_store_delete_leader"
+ON public."SecondHandStore"
+FOR DELETE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.profile
+    WHERE profile.id = auth.uid()
+      AND profile.role IN ('leader', 'cub_master')
+  )
+);
+
 -- Private bucket reads are served through signed URLs from the page.
 DROP POLICY IF EXISTS "second_hand_store_images_read_authenticated" ON storage.objects;
 DROP POLICY IF EXISTS "second_hand_store_images_insert_owner" ON storage.objects;
 DROP POLICY IF EXISTS "second_hand_store_images_delete_owner" ON storage.objects;
+DROP POLICY IF EXISTS "second_hand_store_images_delete_leader" ON storage.objects;
 
 CREATE POLICY "second_hand_store_images_read_authenticated"
 ON storage.objects
@@ -82,4 +119,18 @@ TO authenticated
 USING (
   bucket_id = 'SecondHandStore'
   AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "second_hand_store_images_delete_leader"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'SecondHandStore'
+  AND EXISTS (
+    SELECT 1
+    FROM public.profile
+    WHERE profile.id = auth.uid()
+      AND profile.role IN ('leader', 'cub_master')
+  )
 );

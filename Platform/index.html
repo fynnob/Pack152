@@ -103,7 +103,7 @@
   <header class="navbar">
     <h1>Pack 152 — Family Platform</h1>
     <div class="nav-actions">
-      <button class="btn-nav" onclick="location.href='/select'">Switch View</button>
+      <button id="btn-switch-view" class="btn-nav" onclick="location.href='/select'">Switch View</button>
       <button class="btn-nav" onclick="signOut()">Log Out</button>
     </div>
   </header>
@@ -156,8 +156,8 @@
           .eq('id', session.user.id)
           .single();
 
-        // Reveal the "Switch View" button ONLY for Leaders and Cub Masters
-        if (profile && (profile.role === 'leader' || profile.role === 'cub_master')) {
+        // Reveal the "Switch View" button only for leaders
+        if (profile && profile.role === 'leader') {
           const switchBtn = document.getElementById('btn-switch-view');
           if (switchBtn) {
             switchBtn.style.display = 'inline-flex';

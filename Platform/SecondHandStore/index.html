@@ -75,6 +75,7 @@
     const MAX_FILE_SIZE = 10 * 1024 * 1024;
     let supabaseClient;
     let currentUser;
+    let isLeader = false;
     let listingToRemove;
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -88,7 +89,8 @@
     });
 
     async function loadProfileDefaults() {
-      const { data: profile } = await supabaseClient.from('profile').select('parent_name, phone_number').eq('id', currentUser.id).single();
+      const { data: profile } = await supabaseClient.from('profile').select('parent_name, phone_number, role').eq('id', currentUser.id).single();
+      isLeader = profile?.role === 'leader' || profile?.role === 'cub_master';
       document.getElementById('listing-email').value = currentUser.email || '';
       document.getElementById('listing-phone').value = profile?.phone_number || '';
     }
@@ -123,7 +125,7 @@
             <div class="item-price listing-price">${formatPrice(listing.price)}</div>
             <div class="item-desc listing-description">${escapeHtml(listing.description)}</div>
             <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
-            ${listing.seller_id === currentUser.id ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Mark as sold / remove</button></div>` : ''}
+            ${listing.seller_id === currentUser.id || isLeader ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Mark as sold / remove</button></div>` : ''}
           </div>
         </article>
       `).join('');
@@ -174,7 +176,9 @@
     function closeListingModal() { document.getElementById('listing-modal').style.display = 'none'; setFormStatus(''); }
     async function openConfirmModal(id, photoPath) {
       if (!window.confirm('Remove this listing? It will no longer appear in the Second-Hand Store.')) return;
-      const { error } = await supabaseClient.from('SecondHandStore').update({ is_active: false }).eq('id', id).eq('seller_id', currentUser.id);
+      let removalQuery = supabaseClient.from('SecondHandStore').update({ is_active: false }).eq('id', id);
+      if (!isLeader) removalQuery = removalQuery.eq('seller_id', currentUser.id);
+      const { error } = await removalQuery;
       if (error) { setStatus(error.message); return; }
       await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
       await loadListings();
