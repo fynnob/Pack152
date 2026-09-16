@@ -68,6 +68,17 @@
     </div>
   </div>
 
+  <div id="delete-confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+    <div class="modal-card delete-confirm-card">
+      <h2 id="delete-confirm-title">Delete this item?</h2>
+      <p>This listing will be removed from the Second-Hand Store.</p>
+      <div class="modal-actions">
+        <button class="btn-back" type="button" onclick="closeDeleteConfirmModal()">Cancel</button>
+        <button class="btn-delete-confirm" type="button" onclick="confirmListingRemoval()">Yes, delete</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
@@ -76,7 +87,7 @@
     let supabaseClient;
     let currentUser;
     let isLeader = false;
-    let listingToRemove;
+    let listingToRemove = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -125,7 +136,7 @@
             <div class="item-price listing-price">${formatPrice(listing.price)}</div>
             <div class="item-desc listing-description">${escapeHtml(listing.description)}</div>
             <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
-            ${listing.seller_id === currentUser.id || isLeader ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Mark as sold / remove</button></div>` : ''}
+            ${isLeader ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Remove listing</button></div>` : ''}
           </div>
         </article>
       `).join('');
@@ -174,13 +185,29 @@
 
     function openListingModal() { document.getElementById('listing-modal').style.display = 'flex'; }
     function closeListingModal() { document.getElementById('listing-modal').style.display = 'none'; setFormStatus(''); }
-    async function openConfirmModal(id, photoPath) {
-      if (!window.confirm('Remove this listing? It will no longer appear in the Second-Hand Store.')) return;
-      let removalQuery = supabaseClient.from('SecondHandStore').update({ is_active: false }).eq('id', id);
-      if (!isLeader) removalQuery = removalQuery.eq('seller_id', currentUser.id);
-      const { error } = await removalQuery;
-      if (error) { setStatus(error.message); return; }
+    function openConfirmModal(id, photoPath) {
+      if (!isLeader) return;
+      listingToRemove = { id, photoPath };
+      document.getElementById('delete-confirm-modal').style.display = 'flex';
+    }
+    function closeDeleteConfirmModal() {
+      listingToRemove = null;
+      document.getElementById('delete-confirm-modal').style.display = 'none';
+    }
+    async function confirmListingRemoval() {
+      if (!isLeader || !listingToRemove) return;
+      const { id, photoPath } = listingToRemove;
+      const confirmButton = document.querySelector('.btn-delete-confirm');
+      confirmButton.disabled = true;
+      const { error } = await supabaseClient.from('SecondHandStore').update({ is_active: false }).eq('id', id);
+      if (error) {
+        confirmButton.disabled = false;
+        setStatus(error.message);
+        return;
+      }
       await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
+      confirmButton.disabled = false;
+      closeDeleteConfirmModal();
       await loadListings();
     }
 
