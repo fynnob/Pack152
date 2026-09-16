@@ -500,6 +500,42 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .platform-order-page .size-picker-option:hover { background: #2563eb; border-color: #60a5fa; }
 
 /* Second-Hand Store follows the same parent-platform surfaces and controls. */
+.secondhand-page .navbar {
+  min-height: 4.5rem;
+  padding: 1rem 1.5rem !important;
+}
+.secondhand-page .navbar h1 {
+  margin: 0 !important;
+  font-size: 1.2rem !important;
+  line-height: 1.2 !important;
+  white-space: nowrap;
+}
+.secondhand-page .navbar .nav-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: nowrap !important;
+  gap: 0.6rem !important;
+}
+.secondhand-page .navbar .btn-nav {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.35rem;
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+}
+.secondhand-page .modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.86);
+  backdrop-filter: blur(8px);
+}
+.secondhand-page .modal-overlay[style*="display: flex"] { display: flex !important; }
 .secondhand-page .container {
   max-width: 1180px !important;
   margin: 2.25rem auto !important;
@@ -573,6 +609,40 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-card) !important;
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100vh - 2rem));
+  overflow-y: auto;
+  padding: 1.5rem !important;
+}
+.secondhand-page .item-detail-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.82);
+  color: #fff;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.secondhand-page .item-detail-close:hover { background: #334155; }
+.secondhand-page .modal-card .form-control {
+  display: block;
+  width: 100%;
+  min-height: 2.7rem;
+  padding: 0.65rem 0.8rem !important;
+  font-size: 0.9rem !important;
+}
+.secondhand-page .modal-card textarea.form-control { min-height: 7rem; resize: vertical; }
+.secondhand-page .modal-card input[type="file"] { padding: 0.45rem 0.6rem !important; }
+.secondhand-page .form-actions .btn-action,
+.secondhand-page .form-actions .btn-back {
+  min-height: 2.5rem;
+  padding: 0.6rem 1rem !important;
+  font-size: 0.85rem !important;
 }
 .secondhand-page .modal-card h2 { color: var(--ink) !important; }
 .secondhand-page .modal-card > p { color: var(--ink-muted) !important; }
@@ -638,4 +708,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   .secondhand-page .contact-grid { grid-template-columns: 1fr; }
   .secondhand-page .form-actions { flex-direction: column-reverse; }
   .secondhand-page .form-actions button { width: 100%; }
+  .secondhand-page .navbar { align-items: center !important; }
+  .secondhand-page .navbar h1 { white-space: normal; }
+  .secondhand-page .navbar .nav-actions { width: auto; }
 }

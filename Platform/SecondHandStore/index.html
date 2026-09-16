@@ -46,7 +46,7 @@
       .secondhand-page .form-actions button { width:100%; }
     }
   </style>
-  <link rel="stylesheet" href="/shared.css?v=11">
+  <link rel="stylesheet" href="/shared.css?v=12">
 </head>
 <body class="secondhand-page">
   <header class="navbar">
@@ -107,17 +107,6 @@
           <button class="btn-action" type="submit">Publish Listing</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <div id="confirm-modal" class="modal-overlay">
-    <div class="modal-card">
-      <h2>Remove this listing?</h2>
-      <p>It will no longer appear in the Second-Hand Store.</p>
-      <div class="form-actions">
-        <button class="btn-back" type="button" onclick="closeConfirmModal()">Cancel</button>
-        <button class="btn-action" type="button" onclick="confirmRemoveListing()">Remove Listing</button>
-      </div>
     </div>
   </div>
 
@@ -220,16 +209,11 @@
 
     function openListingModal() { document.getElementById('listing-modal').style.display = 'flex'; }
     function closeListingModal() { document.getElementById('listing-modal').style.display = 'none'; setFormStatus(''); }
-    function openConfirmModal(id, photoPath) { listingToRemove = { id, photoPath }; document.getElementById('confirm-modal').style.display = 'flex'; }
-    function closeConfirmModal() { listingToRemove = null; document.getElementById('confirm-modal').style.display = 'none'; }
-
-    async function confirmRemoveListing() {
-      if (!listingToRemove) return;
-      const { id, photoPath } = listingToRemove;
+    async function openConfirmModal(id, photoPath) {
+      if (!window.confirm('Remove this listing? It will no longer appear in the Second-Hand Store.')) return;
       const { error } = await supabaseClient.from('SecondHandStore').update({ is_active: false }).eq('id', id).eq('seller_id', currentUser.id);
-      if (error) { setStatus(error.message); closeConfirmModal(); return; }
+      if (error) { setStatus(error.message); return; }
       await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
-      closeConfirmModal();
       await loadListings();
     }
 
