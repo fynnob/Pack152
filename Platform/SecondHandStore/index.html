@@ -117,14 +117,12 @@
             ${imageUrl ? `<img class="item-image listing-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(listing.name)}" loading="lazy">` : '<div class="item-image listing-image"></div>'}
             <div class="item-heading listing-heading">
               <div class="item-title">${escapeHtml(listing.name)}</div>
-              <span class="badge-sku item-sku">Community</span>
             </div>
           </div>
           <div class="listing-details">
             <div class="item-price listing-price">${formatPrice(listing.price)}</div>
             <div class="item-desc listing-description">${escapeHtml(listing.description)}</div>
             <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
-            <div class="listing-meta"><span>${new Date(listing.created_at).toLocaleDateString()}</span>${listing.seller_id === currentUser.id ? '<span>Your listing</span>' : ''}</div>
             ${listing.seller_id === currentUser.id ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}')">Mark as sold / remove</button></div>` : ''}
           </div>
         </article>
