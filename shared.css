@@ -594,8 +594,9 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 }
 .secondhand-page .listing-image {
   height: 170px;
+  background: #0f172a;
   margin-bottom: 0.8rem;
-  object-fit: cover;
+  object-fit: contain;
 }
 .secondhand-page .listing-heading {
   display: grid;
