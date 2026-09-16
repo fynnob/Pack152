@@ -228,6 +228,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   font-size: 1rem !important;
   line-height: 1.35 !important;
@@ -501,8 +502,11 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 
 /* Second-Hand Store follows the same parent-platform surfaces and controls. */
 .secondhand-page .navbar {
-  min-height: 4.5rem;
-  padding: 1rem 1.5rem !important;
+  min-height: 0;
+  margin: 0.75rem 1rem 0;
+  padding: 1.1rem 1.25rem !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-lg) !important;
 }
 .secondhand-page .navbar h1 {
   margin: 0 !important;
@@ -524,6 +528,12 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   font-size: 0.85rem !important;
   white-space: nowrap;
 }
+.secondhand-page .navbar .btn-nav:first-child {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+.secondhand-page .navbar .btn-nav:first-child:hover { background: var(--color-primary-hover) !important; }
 .secondhand-page .modal-overlay {
   position: fixed;
   inset: 0;
@@ -607,7 +617,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .modal-card {
   background: var(--surface) !important;
   border: 1px solid var(--line) !important;
-  border-radius: var(--radius-lg) !important;
+  border-radius: 1.25rem !important;
   box-shadow: var(--shadow-card) !important;
   width: min(620px, 100%);
   max-height: min(760px, calc(100vh - 2rem));
@@ -708,7 +718,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   .secondhand-page .contact-grid { grid-template-columns: 1fr; }
   .secondhand-page .form-actions { flex-direction: column-reverse; }
   .secondhand-page .form-actions button { width: 100%; }
-  .secondhand-page .navbar { align-items: center !important; }
+  .secondhand-page .navbar { align-items: center !important; margin: 0.5rem 0.65rem 0; }
   .secondhand-page .navbar h1 { white-space: normal; }
   .secondhand-page .navbar .nav-actions { width: auto; }
 }
