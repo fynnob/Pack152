@@ -657,6 +657,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   line-height: 1.5;
 }
 .secondhand-page .listing-contact strong { color: var(--ink) !important; }
+.secondhand-page .listing-seller-name { color: var(--ink) !important; font-weight: 700; }
 .secondhand-page .listing-meta { border-color: var(--line) !important; }
 .secondhand-page .listing-meta span:last-child { color: #4ade80 !important; }
 .secondhand-page .listing-owner-actions { display: flex; gap: 0.5rem; margin-top: 0.85rem; }

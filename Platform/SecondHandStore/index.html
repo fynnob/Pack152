@@ -41,24 +41,29 @@
           <div class="form-hint">Enter 0 if the item is free.</div>
         </div>
         <div class="form-group">
+          <label class="form-label" for="listing-seller-name">Seller name (optional)</label>
+          <input id="listing-seller-name" class="form-control" type="text" maxlength="120" placeholder="Name to show on the listing">
+        </div>
+        <div class="form-group">
           <label class="form-label" for="listing-description">Description</label>
-          <textarea id="listing-description" class="form-control" rows="4" maxlength="2000" required placeholder="Condition, size, price or anything helpful..."></textarea>
+          <textarea id="listing-description" class="form-control" rows="4" maxlength="2000" placeholder="Condition, size, or anything helpful..."></textarea>
         </div>
         <div class="form-group">
           <label class="form-label" for="listing-photo">Photo</label>
-          <input id="listing-photo" class="form-control" type="file" accept="image/*" required>
+          <input id="listing-photo" class="form-control" type="file" accept="image/*">
           <div class="form-hint">Images only, maximum 10 MB.</div>
         </div>
         <div class="contact-grid">
           <div class="form-group">
             <label class="form-label" for="listing-email">Contact email</label>
-            <input id="listing-email" class="form-control" type="email" required>
+            <input id="listing-email" class="form-control" type="email">
           </div>
           <div class="form-group">
             <label class="form-label" for="listing-phone">Contact phone</label>
-            <input id="listing-phone" class="form-control" type="tel" required>
+            <input id="listing-phone" class="form-control" type="tel">
           </div>
         </div>
+        <div class="form-hint contact-required-hint">Provide an email address, a phone number, or both.</div>
         <div id="form-status" class="status-message" role="alert"></div>
         <div class="form-actions">
           <button class="btn-back" type="button" onclick="closeListingModal()">Cancel</button>
@@ -120,7 +125,9 @@
       }
 
       const rendered = await Promise.all(listings.map(async listing => {
-        const { data: signed } = await supabaseClient.storage.from(BUCKET_NAME).createSignedUrl(listing.photo_path, 3600);
+        const { data: signed } = listing.photo_path
+          ? await supabaseClient.storage.from(BUCKET_NAME).createSignedUrl(listing.photo_path, 3600)
+          : { data: null };
         return { listing, imageUrl: signed?.signedUrl || '' };
       }));
 
@@ -147,8 +154,8 @@
           </div>
           <div class="listing-details">
             <div class="item-price listing-price">${formatPrice(listing.price)}</div>
-            <div class="item-desc listing-description">${escapeHtml(listing.description)}</div>
-            <div class="listing-contact"><strong>Contact seller</strong><br>${escapeHtml(listing.contact_email)}<br>${escapeHtml(listing.contact_phone)}</div>
+            ${listing.description ? `<div class="item-desc listing-description">${escapeHtml(listing.description)}</div>` : ''}
+            <div class="listing-contact"><strong>Contact seller</strong>${listing.seller_name ? `<br><span class="listing-seller-name">${escapeHtml(listing.seller_name)}</span>` : ''}${listing.contact_email ? `<br>${escapeHtml(listing.contact_email)}` : ''}${listing.contact_phone ? `<br>${escapeHtml(listing.contact_phone)}` : ''}</div>
             ${canRemove ? `<div class="listing-owner-actions"><button class="btn-delete" type="button" onclick="openConfirmModal('${listing.id}', '${escapeHtml(listing.photo_path)}', '${listing.seller_id}')">Remove listing</button></div>` : ''}
           </div>
         </article>
@@ -159,31 +166,44 @@
       event.preventDefault();
       setFormStatus('');
       const submitButton = event.target.querySelector('button[type="submit"]');
+      const name = document.getElementById('listing-name').value.trim();
+      const price = Number.parseFloat(document.getElementById('listing-price').value);
+      const sellerName = document.getElementById('listing-seller-name').value.trim();
+      const description = document.getElementById('listing-description').value.trim();
+      const email = document.getElementById('listing-email').value.trim();
+      const phone = document.getElementById('listing-phone').value.trim();
       const file = document.getElementById('listing-photo').files[0];
-      if (!file || !file.type.startsWith('image/')) return setFormStatus('Please choose an image file.');
-      if (file.size > MAX_FILE_SIZE) return setFormStatus('The image must be 10 MB or smaller.');
+      if (!name) return setFormStatus('Please enter an item name.');
+      if (!Number.isFinite(price) || price < 0) return setFormStatus('Please enter a valid price.');
+      if (!email && !phone) return setFormStatus('Please provide an email address, a phone number, or both.');
+      if (file && !file.type.startsWith('image/')) return setFormStatus('Please choose an image file.');
+      if (file && file.size > MAX_FILE_SIZE) return setFormStatus('The image must be 10 MB or smaller.');
 
       submitButton.disabled = true;
-      const extension = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const photoPath = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(photoPath, file, { contentType: file.type, upsert: false });
-      if (uploadError) {
-        setFormStatus(uploadError.message);
-        submitButton.disabled = false;
-        return;
+      let photoPath = null;
+      if (file) {
+        const extension = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        photoPath = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabaseClient.storage.from(BUCKET_NAME).upload(photoPath, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          setFormStatus(uploadError.message);
+          submitButton.disabled = false;
+          return;
+        }
       }
 
       const { error: insertError } = await supabaseClient.from('SecondHandStore').insert({
         seller_id: currentUser.id,
-        name: document.getElementById('listing-name').value.trim(),
-        price: Number.parseFloat(document.getElementById('listing-price').value),
-        description: document.getElementById('listing-description').value.trim(),
+        name,
+        price,
+        seller_name: sellerName || null,
+        description: description || null,
         photo_path: photoPath,
-        contact_email: document.getElementById('listing-email').value.trim(),
-        contact_phone: document.getElementById('listing-phone').value.trim()
+        contact_email: email || null,
+        contact_phone: phone || null
       });
       if (insertError) {
-        await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
+        if (photoPath) await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
         setFormStatus(insertError.message);
         submitButton.disabled = false;
         return;
@@ -218,7 +238,7 @@
         setStatus(error.message);
         return;
       }
-      await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
+      if (photoPath) await supabaseClient.storage.from(BUCKET_NAME).remove([photoPath]);
       confirmButton.disabled = false;
       closeDeleteConfirmModal();
       await loadListings();
