@@ -81,6 +81,16 @@
       font-weight: 800;
       white-space: nowrap;
     }
+    .active-badge {
+      padding: 0.3rem 0.65rem;
+      border: 1px solid #60a5fa;
+      border-radius: 999px;
+      color: #bfdbfe;
+      background: rgba(37, 99, 235, 0.18);
+      font-size: 0.75rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
     .item-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -173,6 +183,12 @@
     const SUPABASE_URL = 'https://ygoxjtgoyoxjcvtypoii.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_yfKBDqPQsdXY2dNhkuUPRw_7pea76ia';
     const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80';
+    const ACTIVE_ORDER_STATUSES = [
+      'placed',
+      'Ordered (on platform)',
+      'Payment Verified',
+      'Order Placed (inside scout shop)'
+    ];
     let supabaseClient;
     let detailItems = [];
 
@@ -185,7 +201,7 @@
       if (!user) return;
 
       const [{ data: orders, error: ordersError }, { data: catalog, error: catalogError }] = await Promise.all([
-        supabaseClient.from('orders').select('*').eq('user_id', user.id).eq('status', 'Delivered').order('created_at', { ascending: false }),
+        supabaseClient.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         supabaseClient.from('items').select('*')
       ]);
 
@@ -193,14 +209,16 @@
         ordersList.innerHTML = '<div class="empty-state">Past orders could not be loaded.</div>';
         return;
       }
-      if (!orders || orders.length === 0) {
-        ordersList.innerHTML = '<div class="empty-state">You do not have any delivered orders yet.</div>';
+      const activeOrders = (orders || []).filter(order => ACTIVE_ORDER_STATUSES.includes(order.status));
+      const deliveredOrders = (orders || []).filter(order => order.status === 'Delivered');
+      if (activeOrders.length === 0 && deliveredOrders.length === 0) {
+        ordersList.innerHTML = '<div class="empty-state">You do not have any active or delivered orders yet.</div>';
         return;
       }
 
       const catalogById = Object.fromEntries((catalog || []).map(item => [String(item.id), item]));
       const catalogBySku = Object.fromEntries((catalog || []).filter(item => item.sku).map(item => [String(item.sku), item]));
-      ordersList.innerHTML = orders.map((order, orderIndex) => {
+      const renderOrderCard = (order, isActive) => {
         const items = (order.items || []).map(orderItem => {
           const catalogItem = catalogById[String(orderItem.id)] || catalogBySku[String(orderItem.sku)] || {};
           const item = { ...catalogItem, ...orderItem, image_url: orderItem.image_url || catalogItem.image_url || '', description: orderItem.description || catalogItem.description || '' };
@@ -216,19 +234,25 @@
           `;
         }).join('');
         const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString() : 'Date unavailable';
+        const statusText = order.status === 'placed' ? 'Ordered (on platform)' : (order.status || 'Ordered');
         return `
           <section class="order-card">
             <div class="order-heading">
               <div>
                 <h3>Order ${escapeHtml(order.reference_code || order.id.slice(0, 8))}</h3>
-                <div class="order-meta">Delivered ${escapeHtml(orderDate)} · Total $${Number(order.total_amount || 0).toFixed(2)}</div>
+                <div class="order-meta">${isActive ? `Placed ${escapeHtml(orderDate)} · ${escapeHtml(statusText)}` : `Delivered ${escapeHtml(orderDate)}`} · Total $${Number(order.total_amount || 0).toFixed(2)}</div>
               </div>
-              <span class="delivered-badge">Delivered</span>
+              <span class="${isActive ? 'active-badge' : 'delivered-badge'}">${isActive ? 'Active order' : 'Delivered'}</span>
             </div>
             <div class="item-grid">${items || '<p class="order-meta">No item details available.</p>'}</div>
           </section>
         `;
-      }).join('');
+      };
+
+      ordersList.innerHTML = [
+        ...activeOrders.map(order => renderOrderCard(order, true)),
+        ...deliveredOrders.map(order => renderOrderCard(order, false))
+      ].join('');
     }
 
     function openItemModal(itemIndex) {
