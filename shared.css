@@ -608,6 +608,9 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   padding: 0 1.2rem 1.2rem;
 }
 .secondhand-page .listing-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   min-width: 0;
   background: var(--surface) !important;
   border: 1px solid var(--line) !important;
@@ -644,7 +647,12 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
   max-width: 7rem;
   text-align: center;
 }
-.secondhand-page .listing-details { margin-top: 0.8rem; }
+.secondhand-page .listing-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin-top: 0.8rem;
+}
 .secondhand-page .listing-description { min-height: 4.1rem; font-size: 0.88rem; line-height: 1.55; }
 .secondhand-page .listing-contact {
   margin-top: 0.75rem;
@@ -660,7 +668,7 @@ section h2, .color-name, .card h3 { color: var(--ink) !important; }
 .secondhand-page .listing-seller-name { color: var(--ink) !important; font-weight: 700; }
 .secondhand-page .listing-meta { border-color: var(--line) !important; }
 .secondhand-page .listing-meta span:last-child { color: #4ade80 !important; }
-.secondhand-page .listing-owner-actions { display: flex; gap: 0.5rem; margin-top: 0.85rem; }
+.secondhand-page .listing-owner-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.85rem; }
 .secondhand-page .listing-owner-actions .btn-delete {
   width: 100%;
   padding: 0.55rem 0.75rem;
