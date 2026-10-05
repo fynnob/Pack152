@@ -443,6 +443,9 @@ window.submitOrder = async function() {
       const { data: fnData, error: fnErr } = await supabaseClient.functions.invoke('send-order-email', {
         body: { orderId: orderId, email: user.email }
       });
+      if (fnErr) {
+        console.error('Order email failed:', fnErr);
+      }
       if (!fnErr && fnData?.referenceCode) {
         window.showToast(`Reference Code: ${fnData.referenceCode} - Payment email sent!`, 'success');
       }

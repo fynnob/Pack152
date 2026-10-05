@@ -971,7 +971,10 @@
             targetStatus: 'Payment Reminder'
           }
         });
-        if (error) throw error;
+        if (error) {
+          console.error('Payment reminder response:', error);
+          throw error;
+        }
         sentCount += 1;
       } catch (error) {
         failedCount += 1;
