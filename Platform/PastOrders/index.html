@@ -240,7 +240,7 @@
             <div class="order-heading">
               <div>
                 <h3>Order ${escapeHtml(order.reference_code || order.id.slice(0, 8))}</h3>
-                <div class="order-meta">${isActive ? `Placed ${escapeHtml(orderDate)} · ${escapeHtml(statusText)}` : `Delivered ${escapeHtml(orderDate)}`} · Total $${Number(order.total_amount || 0).toFixed(2)}</div>
+                <div class="order-meta">${isActive ? `Placed ${escapeHtml(orderDate)} · ${escapeHtml(statusText)}` : `Delivered ${escapeHtml(orderDate)}`} · Total $${Number(order.total_amount || 0).toFixed(2)} (€${Number(order.total_amount_eur || 0).toFixed(2)})</div>
               </div>
               <span class="${isActive ? 'active-badge' : 'delivered-badge'}">${isActive ? 'Active order' : 'Delivered'}</span>
             </div>
@@ -266,7 +266,7 @@
         <div><strong>Size:</strong> ${escapeHtml(item.size || 'One size')}</div>
         <div><strong>SKU:</strong> ${escapeHtml(item.sku || 'N/A')}</div>
         <div><strong>Quantity:</strong> ${Number(item.quantity) || 0}</div>
-        <div><strong>Price:</strong> $${Number(item.price || 0).toFixed(2)}</div>
+        <div><strong>Price:</strong> $${Number(item.price || 0).toFixed(2)} (€${Number(item.price_eur || 0).toFixed(2)})</div>
       `;
       document.getElementById('item-modal').style.display = 'flex';
     }

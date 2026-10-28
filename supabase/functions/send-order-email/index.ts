@@ -19,8 +19,11 @@ function generateReferenceCode(): string {
   return result;
 }
 
-const bankDetailsTransitionMessage =
-  "We are currently in a transition phase between treasurers and will share our bank details with you shortly.";
+function formatAmount(usdAmount: number, eurAmount: number): string {
+  const usd = Number(usdAmount || 0);
+  const eur = Number(eurAmount || 0);
+  return `$${usd.toFixed(2)} (€${eur.toFixed(2)})`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -102,9 +105,10 @@ serve(async (req) => {
               [SKU: ${item.sku || "N/A"}]
             </code>
             x${item.quantity} —
-            <strong>$${(
-              Number(item.price || 0) * Number(item.quantity || 0)
-            ).toFixed(2)}</strong>
+            <strong>${formatAmount(
+              Number(item.price || 0) * Number(item.quantity || 0),
+              Number(item.price_eur || 0) * Number(item.quantity || 0)
+            )}</strong>
           </li>
         `
       )
@@ -124,7 +128,7 @@ serve(async (req) => {
             </h3>
 
             <p style="margin:0 0 10px 0; color:#9a3412;">
-              Here are our bank details for your order. Please use the reference below when making your transfer.
+              Please use the bank details below and include the reference when making your transfer.
             </p>
 
             <p style="margin:0 0 10px 0; color:#9a3412;">
@@ -134,17 +138,15 @@ serve(async (req) => {
 
           <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:16px; border-radius:8px;">
             <p style="margin:4px 0;">
-              <strong>Account Name:</strong> John Doe
-            </p>
-
-            <p style="margin:4px 0;">
-              <strong>IBAN:</strong> DEXX XXXX XXXX XXXX XXXX XX
+              IBAN: DE25100110012448534474<br>
+              BIC: NTSBDEB1XXX<br>
+              Name: Kerstin Oberwagner
             </p>
 
             <p style="margin:4px 0;">
               <strong>Transaction Reason / Reference:</strong>
               <span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; font-weight:bold; border-radius:4px;">
-                ${refCode} - Order
+                ${order.parent_name || "Pack 152 family"} - Uniform
               </span>
             </p>
           </div>
@@ -197,14 +199,16 @@ serve(async (req) => {
             Your order has been recorded. Below are your order details.
           </p>
 
-          <p>
-            ${bankDetailsTransitionMessage}
+          <p style="margin:4px 0;">
+            IBAN: DE25100110012448534474<br>
+            BIC: NTSBDEB1XXX<br>
+            Name: Kerstin Oberwagner
           </p>
 
           <p>
             <strong>Transaction Reason / Reference:</strong>
             <span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; font-weight:bold; border-radius:4px;">
-              ${refCode} - Order
+              ${order.parent_name || "Pack 152 family"} - Uniform
             </span>
           </p>
         `;
@@ -229,7 +233,10 @@ serve(async (req) => {
 
         <p style="font-size:1.1em;">
           <strong>
-            Total Amount: $${Number(order.total_amount || 0).toFixed(2)}
+            Total Amount: ${formatAmount(
+              Number(order.total_amount || 0),
+              Number(order.total_amount_eur || 0)
+            )}
           </strong>
         </p>
       </div>

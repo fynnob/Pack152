@@ -410,8 +410,15 @@ window.submitOrder = async function() {
 
   try {
     const { data: { user } } = await supabaseClient.auth.getUser();
-    const itemsList = Object.values(cart);
+    const itemsList = Object.values(cart).map(item => ({
+      ...item,
+      price_eur: Math.round(Number(item.price || 0) * window.eurExchangeRate * 100) / 100
+    }));
     const totalAmount = itemsList.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    const totalAmountEur = Math.round(
+      itemsList.reduce((sum, i) => sum + (i.price_eur * i.quantity), 0) * 100
+    ) / 100;
+    const currencyLockedAt = new Date().toISOString();
 
     let orderId = null;
 
@@ -419,6 +426,9 @@ window.submitOrder = async function() {
       const { data, error } = await supabaseClient.from('orders').update({
         items: itemsList,
         total_amount: totalAmount,
+        total_amount_eur: totalAmountEur,
+        eur_exchange_rate: window.eurExchangeRate,
+        currency_locked_at: currencyLockedAt,
         updated_at: new Date().toISOString()
       }).eq('id', existingOrder.id).select().single();
 
@@ -431,6 +441,9 @@ window.submitOrder = async function() {
         parent_name: userProfile ? userProfile.parent_name : 'Parent',
         items: itemsList,
         total_amount: totalAmount,
+        total_amount_eur: totalAmountEur,
+        eur_exchange_rate: window.eurExchangeRate,
+        currency_locked_at: currencyLockedAt,
         status: 'Ordered (on platform)'
       }).select().single();
 
@@ -550,8 +563,8 @@ function showOrderBanner(order) {
   const details = document.getElementById('order-banner-details');
   const totalItems = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
   const refText = order.reference_code ? ` | Ref: ${order.reference_code}` : '';
-
-  details.textContent = `Status: ${order.status || 'Ordered'} | Items: ${totalItems} | Total: ${window.formatPriceDisplay(order.total_amount)}${refText}`;
+  const totalDisplay = `$${Number(order.total_amount || 0).toFixed(2)} (€${Number(order.total_amount_eur || 0).toFixed(2)})`;
+  details.textContent = `Status: ${order.status || 'Ordered'} | Items: ${totalItems} | Total: ${totalDisplay}${refText}`;
   banner.style.display = 'flex';
   updateCatalogButtonState();
 }

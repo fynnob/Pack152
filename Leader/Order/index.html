@@ -360,7 +360,8 @@
           <div class="export-field-row" data-field="item_name"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Item name</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
           <div class="export-field-row" data-field="size"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Size</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
           <div class="export-field-row" data-field="quantity"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Quantity</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
-          <div class="export-field-row" data-field="total_amount"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Total cost</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="total_amount"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Total cost (USD)</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
+          <div class="export-field-row" data-field="total_amount_eur"><label><input type="checkbox" checked onchange="updateExportPreview()" /> Total cost (EUR)</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
           <div class="export-field-row" data-field="status"><label><input type="checkbox" onchange="updateExportPreview()" /> Order status</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
           <div class="export-field-row" data-field="created_at"><label><input type="checkbox" onchange="updateExportPreview()" /> Date placed</label><span class="export-field-arrows"><button type="button" onclick="moveExportField(this, -1)">↑</button><button type="button" onclick="moveExportField(this, 1)">↓</button></span></div>
         </div>
@@ -684,7 +685,8 @@
     const EXPORT_FIELD_LABELS = {
       parent_name: 'Parent name', email: 'Email', reference_code: 'Payment reason code',
       sku: 'Item SKU', item_name: 'Item name', size: 'Size', quantity: 'Quantity',
-      total_amount: 'Total cost', status: 'Order status', created_at: 'Date placed'
+      total_amount: 'Total cost (USD)', total_amount_eur: 'Total cost (EUR)',
+      status: 'Order status', created_at: 'Date placed'
     };
 
     function exportToCSV() {
@@ -754,6 +756,7 @@
       if (field === 'size') return item ? (item.size || '') : (row.items || []).map(value => value.size || '').join(' | ');
       if (field === 'quantity') return item ? (item.quantity || 0) : (row.items || []).reduce((sum, value) => sum + Number(value.quantity || 0), 0);
       if (field === 'total_amount') return Number(order.total_amount || 0).toFixed(2);
+      if (field === 'total_amount_eur') return Number(order.total_amount_eur || 0).toFixed(2);
       if (field === 'status') return order.status || '';
       if (field === 'created_at') return order.created_at ? new Date(order.created_at).toLocaleString() : '';
       return '';
@@ -910,7 +913,7 @@
           <td class="order-item-summary">
             ${(o.items || []).map(i => `<span class="order-item-line"><span class="badge-sku">${escapeHtml(i.sku || 'N/A')}</span><strong>×${Number(i.quantity) || 0}</strong></span>`).join('')}
           </td>
-          <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)}</td>
+          <td style="font-weight:700; color:#4ade80;">$${Number(o.total_amount).toFixed(2)} (€${Number(o.total_amount_eur || 0).toFixed(2)})</td>
           <td>${actionCell}</td>
         </tr>
       `;
