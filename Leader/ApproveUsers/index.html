@@ -105,23 +105,6 @@
       gap: 0.75rem;
     }
 
-    .code-input {
-      width: 90px;
-      padding: 0.55rem;
-      font-size: 1.1rem;
-      font-family: monospace;
-      font-weight: 700;
-      text-align: center;
-      letter-spacing: 0.15em;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1.5px solid rgba(255, 255, 255, 0.2);
-      border-radius: var(--radius-md);
-      color: #ffffff;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-    .code-input:focus { border-color: var(--color-primary); }
-
     .btn-approve {
       background-color: var(--color-primary);
       color: #ffffff;
@@ -155,7 +138,7 @@
   <main class="container">
     <div class="page-header">
       <h2>Approve New Members</h2>
-      <p>Enter the member's 4-digit verification code shown on their onboarding screen to approve them.</p>
+      <p>Review and approve new member registrations.</p>
     </div>
 
     <div id="user-list" class="user-list">
@@ -174,16 +157,6 @@
         loadPendingUsers();
       }
     });
-
-    /* Deterministic 4-digit code generator (Matches profile.html algorithm) */
-    function generate4DigitCode(uuid) {
-      let hash = 0;
-      for (let i = 0; i < uuid.length; i++) {
-        hash = ((hash << 5) - hash) + uuid.charCodeAt(i);
-        hash |= 0;
-      }
-      return Math.abs(hash % 10000).toString().padStart(4, '0');
-    }
 
     async function loadPendingUsers() {
       const listContainer = document.getElementById('user-list');
@@ -214,7 +187,6 @@
             </div>
 
             <div class="action-group">
-              <input type="text" id="code-${u.id}" class="code-input" placeholder="0000" maxlength="4" />
               <button class="btn-approve" onclick="approveUser('${u.id}')">Approve</button>
             </div>
           </div>
@@ -226,20 +198,6 @@
     }
 
     async function approveUser(userId) {
-      const codeInput = document.getElementById(`code-${userId}`);
-      const enteredCode = codeInput.value.trim();
-
-      // 1. Calculate the expected code locally from the target UUID
-      const expectedCode = generate4DigitCode(userId);
-
-      // 2. Perform strict local verification
-      if (enteredCode !== expectedCode) {
-        alert(`❌ Incorrect verification code! Entered: "${enteredCode}". Please check the 4-digit code on the member's device.`);
-        codeInput.style.borderColor = '#ef4444';
-        return;
-      }
-
-      // 3. Code matches locally -> Send approval RPC call
       try {
         const { data, error } = await supabaseClient.rpc('approve_user', {
           p_target_user_id: userId
