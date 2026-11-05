@@ -30,16 +30,13 @@
   </header>
 
   <main class="container">
-    <!-- Active Order Banner -->
-    <div id="order-banner" class="order-summary-banner" style="display: none;">
-      <div>
-        <h3 style="font-size: 1.1rem; font-weight: 800; color: #60a5fa;">Active Order Placed</h3>
-        <p id="order-banner-details" style="font-size: 0.875rem; color: #cbd5e1; margin-top: 0.25rem;"></p>
+    <!-- Active Orders -->
+    <div id="order-banner" class="active-orders-panel" style="display: none;">
+      <div class="active-orders-header">
+        <h3>Active Orders</h3>
+        <button class="btn-action" type="button" onclick="window.startNewOrder()">＋ New Order</button>
       </div>
-      <div class="banner-actions">
-        <button class="btn-edit" onclick="window.enableEditOrder()">✏️ Change Order</button>
-        <button class="btn-delete" onclick="window.confirmDeleteOrder()">🗑️ Delete Order</button>
-      </div>
+      <div id="active-orders-list" class="active-orders-list"></div>
     </div>
 
     <!-- Catalog Sections -->

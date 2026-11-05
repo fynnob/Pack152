@@ -22,7 +22,7 @@ function generateReferenceCode(): string {
 function formatAmount(usdAmount: number, eurAmount: number): string {
   const usd = Number(usdAmount || 0);
   const eur = Number(eurAmount || 0);
-  return `$${usd.toFixed(2)} (€${eur.toFixed(2)})`;
+  return `€${eur.toFixed(2)} - $${usd.toFixed(2)}`;
 }
 
 serve(async (req) => {

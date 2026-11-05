@@ -28,5 +28,5 @@ window.initExchangeRate = async function() {
 window.formatPriceDisplay = function(usdAmount) {
   const usd = Number(usdAmount || 0);
   const eur = Math.round(usd * window.eurExchangeRate * 100) / 100;
-  return `$${usd.toFixed(2)} (€${eur.toFixed(2)})`;
+  return `€${eur.toFixed(2)} - $${usd.toFixed(2)}`;
 };

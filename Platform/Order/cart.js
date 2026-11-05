@@ -5,6 +5,7 @@ var supabaseClient = null;
 
 let userProfile = null;
 let existingOrder = null;
+let activeOrders = [];
 let isEditingMode = false;
 let cart = {}; // Key: item_id + '_' + size
 let kidsDens = [];
@@ -80,16 +81,15 @@ async function initOrdering() {
     .eq('user_id', user.id)
     .in('status', ACTIVE_ORDER_STATUSES)
     .order('created_at', { ascending: false });
-  if (orders && orders.length > 0) {
-    existingOrder = orders[0];
-    showOrderBanner(existingOrder);
-  }
+  activeOrders = orders || [];
+  renderActiveOrders();
 }
 
-window.confirmDeleteOrder = function() {
-  if (!existingOrder) return;
+window.confirmDeleteOrder = function(orderId) {
+  const order = activeOrders.find(item => item.id === orderId);
+  if (!order) return;
 
-  if (isOrderLocked(existingOrder)) {
+  if (isOrderLocked(order)) {
     window.showToast('Your order has been processed and cannot be deleted. Please email pack152berlin@gmail.com.', 'error');
     return;
   }
@@ -99,7 +99,7 @@ window.confirmDeleteOrder = function() {
     'Are you sure you want to delete your active order? This cannot be undone.',
     async () => {
       try {
-        const { error } = await supabaseClient.from('orders').update({ status: 'cancelled' }).eq('id', existingOrder.id);
+        const { error } = await supabaseClient.from('orders').update({ status: 'cancelled' }).eq('id', order.id);
         if (error) throw error;
         window.showToast('Order deleted successfully.', 'success');
         setTimeout(() => window.location.reload(), 1000);
@@ -205,7 +205,7 @@ window.addToCart = function(id, name, price, defaultSku, hasSizes) {
   }
 
   if (existingOrder && !isEditingMode) {
-    window.showToast('You already have an active order. Click "Change Order" to edit.', 'error');
+    window.showToast('Select an unpaid order to edit it, or click "New Order" to create another order.', 'error');
     return;
   }
 
@@ -558,52 +558,73 @@ window.fetchCustomScoutShopItem = async function() {
   }
 };
 
-function showOrderBanner(order) {
+function renderActiveOrders() {
   const banner = document.getElementById('order-banner');
-  const details = document.getElementById('order-banner-details');
-  const totalItems = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
-  const refText = order.reference_code ? ` | Ref: ${order.reference_code}` : '';
-  const totalDisplay = `$${Number(order.total_amount || 0).toFixed(2)} (€${Number(order.total_amount_eur || 0).toFixed(2)})`;
-  details.textContent = `Status: ${order.status || 'Ordered'} | Items: ${totalItems} | Total: ${totalDisplay}${refText}`;
-  banner.style.display = 'flex';
-  updateCatalogButtonState();
+ const list = document.getElementById('active-orders-list');
+ if (!banner || !list) return;
+
+ list.innerHTML = activeOrders.map(order => {
+   const totalItems = (order.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+   const refText = order.reference_code ? ` · Ref: ${window.escapeHtml(order.reference_code)}` : '';
+   const totalDisplay = `€${Number(order.total_amount_eur || 0).toFixed(2)} - $${Number(order.total_amount || 0).toFixed(2)}`;
+   const locked = isOrderLocked(order);
+   return `
+     <article class="active-order-card">
+       <div>
+         <strong>${window.escapeHtml(order.parent_name || 'Order')}</strong>
+         <p>Status: ${window.escapeHtml(order.status || 'Ordered')} · Items: ${totalItems} · Total: ${totalDisplay}${refText}</p>
+       </div>
+       <div class="banner-actions">
+         ${locked
+           ? '<span class="order-locked-label">Payment verified</span>'
+           : `<button class="btn-edit" type="button" onclick="window.enableEditOrder('${order.id}')">✏️ Edit</button>
+              <button class="btn-delete" type="button" onclick="window.confirmDeleteOrder('${order.id}')">🗑️ Delete</button>`}
+       </div>
+     </article>
+   `;
+ }).join('');
+
+ banner.style.display = activeOrders.length ? 'block' : 'none';
+ updateCatalogButtonState();
 }
 
 function updateCatalogButtonState() {
-  const addBtns = document.querySelectorAll('.btn-add');
-  const locked = isOrderLocked(existingOrder);
+ const addBtns = document.querySelectorAll('.btn-add');
+ const locked = isOrderLocked(existingOrder);
 
-  addBtns.forEach(btn => {
-    btn.disabled = !!(existingOrder && (!isEditingMode || locked));
-  });
+ addBtns.forEach(btn => {
+   btn.disabled = !!(locked || (existingOrder && !isEditingMode));
+ });
 
-  const orderBtn = document.getElementById('place-order-btn');
-  const bannerEditBtn = document.querySelector('.btn-edit');
-  const bannerDeleteBtn = document.querySelector('.btn-delete');
+ const orderBtn = document.getElementById('place-order-btn');
+ if (!orderBtn) return;
 
-  if (existingOrder) {
-    if (locked) {
-      if (bannerEditBtn) bannerEditBtn.style.display = 'inline-block';
-      if (bannerDeleteBtn) bannerDeleteBtn.style.display = 'none';
-      if (orderBtn) {
-        orderBtn.disabled = true;
-        orderBtn.textContent = 'Order Locked (Payment Verified)';
-      }
-    } else if (!isEditingMode) {
-      if (bannerEditBtn) bannerEditBtn.style.display = 'inline-block';
-      if (bannerDeleteBtn) bannerDeleteBtn.style.display = 'inline-block';
-      if (orderBtn) {
-        orderBtn.disabled = true;
-        orderBtn.textContent = 'Order Already Placed';
-      }
-    }
-  }
+ if (existingOrder && locked) {
+   orderBtn.disabled = true;
+   orderBtn.textContent = 'Order Locked (Payment Verified)';
+ } else if (existingOrder && !isEditingMode) {
+   orderBtn.disabled = true;
+   orderBtn.textContent = 'Select an order to edit';
+ } else {
+   orderBtn.disabled = false;
+   orderBtn.textContent = isEditingMode ? 'Update Existing Order' : 'Place Order';
+ }
 }
 
-window.enableEditOrder = function() {
-  if (!existingOrder) return;
+window.startNewOrder = function() {
+ existingOrder = null;
+ isEditingMode = false;
+ cart = {};
+ renderCart();
+ updateCatalogButtonState();
+ window.showToast('Ready for a new order.', 'success');
+};
 
-  if (isOrderLocked(existingOrder)) {
+window.enableEditOrder = function(orderId) {
+ const order = activeOrders.find(item => item.id === orderId);
+ if (!order) return;
+
+ if (isOrderLocked(order)) {
     window.showConfirmModal(
       'Order Cannot Be Changed',
       'Payment has been verified for this order. Please email pack152berlin@gmail.com to request a change.',
@@ -613,9 +634,10 @@ window.enableEditOrder = function() {
     return;
   }
 
+  existingOrder = order;
   isEditingMode = true;
   cart = {};
-  (existingOrder.items || []).forEach(i => {
+  (order.items || []).forEach(i => {
     const cartKey = `${i.id}_${i.size || 'default'}`;
     cart[cartKey] = { ...i };
   });

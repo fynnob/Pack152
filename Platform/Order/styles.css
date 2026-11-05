@@ -91,6 +91,71 @@ body {
   gap: 1rem;
 }
 
+.active-orders-panel {
+  grid-column: 1 / -1;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+}
+
+.active-orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.active-orders-header h3 {
+  margin: 0;
+  color: #60a5fa;
+}
+
+.active-orders-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.active-order-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+}
+
+.active-order-card p {
+  margin: 0.35rem 0 0;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}
+
+.order-locked-label {
+  color: #86efac;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .active-orders-header,
+  .active-order-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .active-order-card .banner-actions {
+    width: 100%;
+  }
+
+  .active-order-card .banner-actions button {
+    flex: 1;
+  }
+}
+
 .banner-actions {
   display: flex;
   gap: 0.75rem;
