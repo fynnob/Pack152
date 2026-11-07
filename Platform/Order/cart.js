@@ -508,10 +508,29 @@ function renderSavedCustomItems(items = getSavedCustomItems()) {
       ${item.description ? `<p class="custom-item-preview-description">${window.escapeHtml(item.description)}</p>` : ''}
       <div class="custom-item-preview-footer">
         <span class="custom-item-preview-price">$${Number(item.price || 0).toFixed(2)}</span>
-        <button class="btn-add" onclick="window.addToCart('${item.id}', '${window.escapeHtml(item.name)}', ${Number(item.price) || 0}, '${window.escapeHtml(item.sku)}', false)">+ Add to Cart</button>
+        <button
+          class="btn-add custom-item-add"
+          type="button"
+          data-item-id="${window.escapeHtml(item.id)}"
+          data-item-name="${window.escapeHtml(item.name)}"
+          data-item-price="${Number(item.price) || 0}"
+          data-item-sku="${window.escapeHtml(item.sku)}"
+        >+ Add to Cart</button>
       </div>
     </div>
   `).join('');
+
+  previewEl.querySelectorAll('.custom-item-add').forEach(button => {
+    button.addEventListener('click', () => {
+      window.addToCart(
+        button.dataset.itemId,
+        button.dataset.itemName,
+        Number(button.dataset.itemPrice) || 0,
+        button.dataset.itemSku || '',
+        false
+      );
+    });
+  });
 }
 
 window.fetchCustomScoutShopItem = async function() {
